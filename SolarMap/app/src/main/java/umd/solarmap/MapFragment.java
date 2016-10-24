@@ -23,6 +23,7 @@ import android.widget.Toast;
 import com.esri.android.map.GraphicsLayer;
 import com.esri.android.map.LocationDisplayManager;
 import com.esri.android.map.MapView;
+import com.esri.android.map.ags.ArcGISImageServiceLayer;
 import com.esri.android.map.event.OnStatusChangedListener;
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Point;
@@ -85,6 +86,9 @@ public class MapFragment extends Fragment {
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
         queryLayer = new GraphicsLayer();
         mainMapView.addLayer(queryLayer);
+
+        mainMapView.addLayer(new ArcGISImageServiceLayer(
+                "https://gis.uspatial.umn.edu/arcgis/rest/services/solar/mn_solar/ImageServer",null));
 
         // Get the search text field & search button
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
