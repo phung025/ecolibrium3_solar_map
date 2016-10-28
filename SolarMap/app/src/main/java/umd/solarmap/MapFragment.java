@@ -26,7 +26,6 @@ import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
  * One difference when creating a Fragment is that you must use the onCreateView() callback to define the layout. In fact, this is the only callback you need in order
@@ -41,7 +40,7 @@ public class MapFragment extends Fragment {
     private EditText searchTextField;
     private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
-    final LocatorTask locatorTask = new LocatorTask("http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer");
+    private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
 
 
@@ -53,16 +52,17 @@ public class MapFragment extends Fragment {
     public void onActivityCreated(Bundle savedInstance) {
         super.onActivityCreated(savedInstance);
 
+        locatorTask = new LocatorTask(getString(R.string.geocode));
+
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
         Basemap basemap = Basemap.createImagery();
         ArcGISMap map = new ArcGISMap(basemap);
-        Viewpoint vp = new Viewpoint(47.606726, -122.335564, 72223.819286);
+        Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
         map.setInitialViewpoint(vp);
         mainMapView.setMap(map);
 
-        ArcGISVectorTiledLayer layer1 = new ArcGISVectorTiledLayer("http://tiles.arcgis.com/tiles/8df8p0NlLFEShl0r/arcgis/rest/services/insol_dlh_annovtpk/VectorTileServer");
-        map.getOperationalLayers().add(layer1);
-
+        ArcGISVectorTiledLayer insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
+        map.getOperationalLayers().add(insol_dlh_annovtpk);
 
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
         searchButton = (FloatingActionButton) getActivity().findViewById(R.id.locationSearchActionButton);
