@@ -12,8 +12,10 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
+import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
+import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
@@ -33,15 +35,14 @@ import java.util.concurrent.ExecutionException;
  */
 public class MapFragment extends Fragment {
 
-    public static final int DEFAULT_MAP_ZOOM = 7;
-
     private MapView mainMapView;
-
     private EditText searchTextField;
     private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
+    private ServiceFeatureTable mServiceFeatureTable;
+    private FeatureLayer mFeaturelayer;
 
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -59,10 +60,16 @@ public class MapFragment extends Fragment {
         ArcGISMap map = new ArcGISMap(basemap);
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
         map.setInitialViewpoint(vp);
-        mainMapView.setMap(map);
 
         ArcGISVectorTiledLayer insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
         map.getOperationalLayers().add(insol_dlh_annovtpk);
+
+        mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k));
+        mFeaturelayer = new FeatureLayer(mServiceFeatureTable);
+        map.getOperationalLayers().add(mFeaturelayer);
+
+//        ArcGISMapImageLayer raw_solar = new ArcGISMapImageLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
+//        map.getOperationalLayers().add(raw_solar);
 
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
         searchButton = (FloatingActionButton) getActivity().findViewById(R.id.locationSearchActionButton);
@@ -70,9 +77,11 @@ public class MapFragment extends Fragment {
         geocodeParams = new GeocodeParameters();
         geocodeParams.setCountryCode("United States");
 
-        setupMap();
-        setupTextField();
-        setupButtons();
+        mainMapView.setMap(map);
+
+        this.setupMap();
+        this.setupTextField();
+        this.setupButtons();
     }
 
     private void setupMap() {
