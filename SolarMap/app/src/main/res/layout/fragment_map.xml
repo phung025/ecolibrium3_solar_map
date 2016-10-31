@@ -1,48 +1,62 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="umd.solarmap.MapFragment">
 
     <!-- TODO: Update blank fragment layout -->
+    <EditText
+        android:layout_weight="2"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:text=""
+        android:ems="10"
+        android:id="@+id/locationSearchTextField"
+        android:layout_alignParentTop="true"
+        android:layout_width="55dp"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/locationSearchActionButton"
+        android:enabled="false" />
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <android.support.design.widget.FloatingActionButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        app:fabSize="mini"
+        app:srcCompat="@android:drawable/ic_menu_search"
+        android:id="@+id/locationSearchActionButton"
+        android:layout_weight="1"
+        app:backgroundTint="@android:color/holo_orange_light"
+        app:elevation="0dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true" />
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+    <android.support.design.widget.FloatingActionButton
+        android:layout_width="55dp"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        app:fabSize="mini"
+        app:srcCompat="@android:drawable/ic_menu_mylocation"
+        android:id="@+id/toCurrentLocationButton"
+        app:layout_anchorGravity="bottom|right|end"
+        android:layout_marginEnd="25dp"
+        android:layout_marginBottom="25dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        app:backgroundTint="@android:color/holo_blue_light" />
 
-            <EditText
-                android:layout_weight="2"
-                android:layout_height="wrap_content"
-                android:inputType="text"
-                android:text=""
-                android:ems="10"
-                android:id="@+id/editText"
-                android:layout_alignParentTop="true"
-                android:layout_width="55dp"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@+id/locationSearchActionButton" />
+    <com.esri.arcgisruntime.mapping.view.MapView
+        android:id="@+id/mainMapView"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        mapoptions.MapType="Streets"
+        mapoptions.center="34.056215, -117.195668"
+        mapoptions.ZoomLevel="16"
+        android:layout_below="@+id/locationSearchTextField"
+        android:layout_alignParentStart="true">
+    </com.esri.arcgisruntime.mapping.view.MapView>
 
-            <android.support.design.widget.FloatingActionButton
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                app:fabSize="mini"
-                app:srcCompat="@android:drawable/ic_menu_search"
-                android:id="@+id/locationSearchActionButton"
-                android:layout_weight="1"
-                app:backgroundTint="@android:color/holo_orange_light"
-                app:elevation="0dp"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentEnd="true" />
 
-        </RelativeLayout>
-
-    </LinearLayout>
-
-</FrameLayout>
+</RelativeLayout>
