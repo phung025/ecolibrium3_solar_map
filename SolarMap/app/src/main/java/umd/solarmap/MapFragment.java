@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,8 +15,11 @@ import android.widget.Toast;
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Point;
+import com.esri.arcgisruntime.layers.ArcGISMapImageLayer;
+import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
+import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
@@ -35,14 +39,25 @@ import java.util.concurrent.ExecutionException;
  */
 public class MapFragment extends Fragment {
 
+    /**
+     * Instance field
+     */
     private MapView mainMapView;
     private EditText searchTextField;
     private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
+    private AlertDialog locationActionDialog;
+
+    // Map Components
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
+
+    // Map Layers
+
     private ServiceFeatureTable mServiceFeatureTable;
-    private FeatureLayer mFeaturelayer;
+    private FeatureLayer mFeaturelayer;                 // Rooftop layer
+    private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
+    private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
 
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -56,32 +71,36 @@ public class MapFragment extends Fragment {
         locatorTask = new LocatorTask(getString(R.string.geocode));
 
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
-        Basemap basemap = Basemap.createImagery();
-        ArcGISMap map = new ArcGISMap(basemap);
-        Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
-        map.setInitialViewpoint(vp);
-
-        ArcGISVectorTiledLayer insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
-        map.getOperationalLayers().add(insol_dlh_annovtpk);
-
-        mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k));
-        mFeaturelayer = new FeatureLayer(mServiceFeatureTable);
-        map.getOperationalLayers().add(mFeaturelayer);
-
-//        ArcGISMapImageLayer raw_solar = new ArcGISMapImageLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
-//        map.getOperationalLayers().add(raw_solar);
-
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
         searchButton = (FloatingActionButton) getActivity().findViewById(R.id.locationSearchActionButton);
         toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
-        geocodeParams = new GeocodeParameters();
-        geocodeParams.setCountryCode("United States");
 
-        mainMapView.setMap(map);
+        (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
 
         this.setupMap();
         this.setupTextField();
         this.setupButtons();
+        this.setupOtherComponents();
+
+        Basemap basemap = Basemap.createImagery();
+        ArcGISMap map = new ArcGISMap(basemap);
+
+        // Setting initial view point of the map
+        Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
+        map.setInitialViewpoint(vp);
+
+        // Setup map layers
+        mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k));
+        mFeaturelayer = new FeatureLayer(mServiceFeatureTable);
+        insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
+        raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
+
+        map.getOperationalLayers().add(insol_dlh_annovtpk);
+        map.getOperationalLayers().add(mFeaturelayer);
+
+        //map.getOperationalLayers().add(raw_solar);
+
+        mainMapView.setMap(map);
     }
 
     private void setupMap() {
@@ -94,13 +113,18 @@ public class MapFragment extends Fragment {
             searchTextField.setEnabled(true);
 
             mainMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF); //changed from LocationDisplayManager.AutoPanMode.LOCATION
-            mainMapView.getLocationDisplay().addLocationChangedListener(locationChangedEvent -> {
-                Point currentLocationPoint = locationChangedEvent.getSource().getLocation().getPosition();
-            });
+            //mainMapView.getLocationDisplay().addLocationChangedListener(locationChangedEvent -> {
+            //    Point currentLocationPoint = locationChangedEvent.getSource().getLocation().getPosition();
+            //});
             mainMapView.getLocationDisplay().setShowLocation(true);
             mainMapView.getLocationDisplay().startAsync();
         });
+
         mainMapView.setOnLongClickListener(view -> {
+
+            // Display the dialog
+            this.locationActionDialog.show();
+
             Toast.makeText(getContext(), "What took you so long?", Toast.LENGTH_LONG).show();
             // Return true that the listener has consumed the event
             return true;
@@ -120,7 +144,7 @@ public class MapFragment extends Fragment {
             inputManager.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
 
             String address = searchTextField.getText().toString();
-            if (!address.equals("")){
+            if (!(address.length() == 0)) {
                 final ListenableFuture<List<GeocodeResult>> geocodeFuture = locatorTask.geocodeAsync(address, geocodeParams);
 
                 geocodeFuture.addDoneListener(() -> {
@@ -130,11 +154,9 @@ public class MapFragment extends Fragment {
                         // Use the first result - for example display on the map
                         GeocodeResult topResult = geocodeResults.get(0);
                         mainMapView.setViewpointCenterAsync(topResult.getDisplayLocation());
-                    }
-                    catch (InterruptedException e) {
+                    } catch (InterruptedException e) {
                         e.printStackTrace();
-                    }
-                    catch (ExecutionException e) {
+                    } catch (ExecutionException e) {
                         e.printStackTrace();
                     }
                 });
@@ -147,7 +169,6 @@ public class MapFragment extends Fragment {
          */
         //region onClickedToCurrentLocationButton()
         toCurrentLocationButton.setOnClickListener(view -> {
-
             Point currentLocationPoint = mainMapView.getLocationDisplay().getLocation().getPosition();
 
             // If the current location is detected
@@ -173,6 +194,22 @@ public class MapFragment extends Fragment {
             }
             return false;
         });
+    }
+
+
+    /**
+     * Setup other components beside buttons & text fields
+     */
+    private void setupOtherComponents() {
+
+        // Setup the dialog for asking user to share or save location
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        String[] optionsTitle = {"Share this place", "Save this place"};
+        builder.setTitle("Set Location");
+        builder.setItems(optionsTitle, (dialog, which) -> {
+
+        });
+        this.locationActionDialog = builder.create();
     }
 }
 

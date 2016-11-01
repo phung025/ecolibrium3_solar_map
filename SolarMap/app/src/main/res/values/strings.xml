@@ -1,10 +1,15 @@
 <resources>
     <string name="app_name">SolarMap</string>
 
-    <string name="raw_solar">https://gis.uspatial.umn.edu/arcgis/rest/services/solar/mn_solar/ImageServer</string>
     <string name="geocode">http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer</string>
+
+    <!-- Minnesota solar energy image layer -->
+    <string name="raw_solar">https://gis.uspatial.umn.edu/arcgis/rest/services/solar/mn_solar/ImageServer</string>
+    <!-- Rooftop layer -->
     <string name="foot_dlh_5k">http://services.arcgis.com/8df8p0NlLFEShl0r/arcgis/rest/services/foot_dlh_5k/FeatureServer</string>
+    <!-- Rooftop solar energy layer -->
     <string name="insol_dlh_annovtpk">http://tiles.arcgis.com/tiles/8df8p0NlLFEShl0r/arcgis/rest/services/insol_dlh_annovtpk/VectorTileServer</string>
+
     <string name="country_code">United States</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>

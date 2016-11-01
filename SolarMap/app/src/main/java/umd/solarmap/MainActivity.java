@@ -13,6 +13,7 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -21,7 +22,8 @@ public class MainActivity extends AppCompatActivity
      * Instace fields
      */
     private static final int LOCATION_PERMISSION_CODE = 1;
-
+    private static final int MAP_FRAGMENT_ID = R.id.nav_map;
+    private static final int SAVED_LOCATION_FRAGMENT_ID = R.id.nav_saved_locations;
 
     // Drawer fragments
     private final MapFragment mapFragment = new MapFragment();
@@ -64,6 +66,8 @@ public class MainActivity extends AppCompatActivity
                     MainActivity.LOCATION_PERMISSION_CODE);
         }
 
+        // Default startup fragment
+        this.switchFragment(MAP_FRAGMENT_ID);
     }
 
     @Override
@@ -82,16 +86,9 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        // Insert the fragment by replacing any existing fragment
-        FragmentManager fragmentManager = getSupportFragmentManager();
-
-
-        if (id == R.id.nav_map) {
-
-            // Switch to the map fragment
-            fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
-
-        } else if (id == R.id.nav_saved_locations) {
+        if (id == MAP_FRAGMENT_ID) {
+            this.switchFragment(MAP_FRAGMENT_ID);
+        } else if (id == SAVED_LOCATION_FRAGMENT_ID) {
 
         } else if (id == R.id.nav_achievements) {
 
@@ -104,5 +101,21 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    /**
+     * Switch the fragment of the drawer
+     * @param FRAGMENT_ID
+     */
+    private void switchFragment(final int FRAGMENT_ID) {
+
+        // Insert the fragment by replacing any existing fragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        // Switch to the map fragment
+        fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
+
+        // Highlight selected row
+        ((NavigationView) findViewById(R.id.nav_view)).getMenu().getItem(FRAGMENT_ID % MAP_FRAGMENT_ID).setChecked(true);
     }
 }
