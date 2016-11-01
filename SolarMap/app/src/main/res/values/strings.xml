@@ -31,6 +31,7 @@
     <string name="addressSearchFailed">Address Search Failed</string>
     <string name="noResultsFound">No Results Found</string>
 
+    <string name="cantFindLocation">Unable to Find the Location</string>
     <string name="cantLocateCurrentPosition">Unable to Locate Current Position</string>
     <!-- This is the text strings for MapFragment -->
 

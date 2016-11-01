@@ -13,18 +13,21 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
+import com.esri.arcgisruntime.datasource.FeatureQueryResult;
+import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
+import com.esri.arcgisruntime.geometry.Envelope;
 import com.esri.arcgisruntime.geometry.Point;
-import com.esri.arcgisruntime.layers.ArcGISMapImageLayer;
 import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
-import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
+import com.esri.arcgisruntime.portal.Portal;
+import com.esri.arcgisruntime.portal.PortalItem;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
@@ -53,7 +56,6 @@ public class MapFragment extends Fragment {
     private GeocodeParameters geocodeParams;
 
     // Map Layers
-
     private ServiceFeatureTable mServiceFeatureTable;
     private FeatureLayer mFeaturelayer;                 // Rooftop layer
     private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
@@ -90,14 +92,12 @@ public class MapFragment extends Fragment {
         map.setInitialViewpoint(vp);
 
         // Setup map layers
-        mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k));
-        mFeaturelayer = new FeatureLayer(mServiceFeatureTable);
+        mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
         insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
         raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
 
         map.getOperationalLayers().add(insol_dlh_annovtpk);
         map.getOperationalLayers().add(mFeaturelayer);
-
         //map.getOperationalLayers().add(raw_solar);
 
         mainMapView.setMap(map);
@@ -152,8 +152,12 @@ public class MapFragment extends Fragment {
                         List<GeocodeResult> geocodeResults = geocodeFuture.get();
 
                         // Use the first result - for example display on the map
-                        GeocodeResult topResult = geocodeResults.get(0);
-                        mainMapView.setViewpointCenterAsync(topResult.getDisplayLocation());
+                        if (!geocodeResults.isEmpty()) {
+                            GeocodeResult topResult = geocodeResults.get(0);
+                            mainMapView.setViewpointCenterAsync(topResult.getDisplayLocation());
+                        } else {
+                            Toast.makeText(getContext(), getString(R.string.cantFindLocation), Toast.LENGTH_LONG).show();
+                        }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (ExecutionException e) {
