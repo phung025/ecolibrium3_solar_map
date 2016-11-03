@@ -1,5 +1,6 @@
 package umd.solarmap;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -20,6 +21,8 @@ import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Envelope;
 import com.esri.arcgisruntime.geometry.Point;
+import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
+import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
@@ -41,14 +44,24 @@ import java.util.concurrent.ExecutionException;
  */
 public class MapFragment extends Fragment {
 
+    /**
+     * Instance field
+     */
     private MapView mainMapView;
     private EditText searchTextField;
     private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
+    private AlertDialog locationActionDialog;
+
+    // Map Components
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
+
+    // Map Layers
     private ServiceFeatureTable mServiceFeatureTable;
-    private FeatureLayer mFeaturelayer;
+    private FeatureLayer mFeaturelayer;                 // Rooftop layer
+    private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
+    private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -61,28 +74,45 @@ public class MapFragment extends Fragment {
         locatorTask = new LocatorTask(getString(R.string.geocode));
 
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
+        searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
+        searchButton = (FloatingActionButton) getActivity().findViewById(R.id.locationSearchActionButton);
+        toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
+
+        (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
+
+        this.setupMap();
+        this.setupTextField();
+        this.setupButtons();
+        this.setupOtherComponents();
+
         Basemap basemap = Basemap.createImagery();
-        ArcGISMap map = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33");
+        ArcGISMap map = new ArcGISMap(basemap);
+
+        // Setting initial view point of the map
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
         map.setInitialViewpoint(vp);
 
+        // Setup map layers
+        mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
+        mFeaturelayer.setSelectionColor(Color.rgb(0, 255, 255)); //cyan, fully opaque
+        mFeaturelayer.setSelectionWidth(3);
+        insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
+        raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
 
-        mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k));
-        mFeaturelayer = new FeatureLayer(mServiceFeatureTable);
-
-
-        mFeaturelayer.setSelectionColor(Color.YELLOW);
-        mFeaturelayer.setSelectionWidth(10);
-        // add the layer to the map
+        map.getOperationalLayers().add(insol_dlh_annovtpk);
         map.getOperationalLayers().add(mFeaturelayer);
+        //map.getOperationalLayers().add(raw_solar);
 
-        mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(MapFragment.super.getContext(), mainMapView) {
+        mainMapView.setMap(map);
+
+        // Listener for selecting a feature.
+        mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getContext(), mainMapView) {
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
 
-                Point clickPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
+                Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
                 int tolerance = 44;
-                double mapTolerance = tolerance * mMapView.getUnitsPerPixel();
+                double mapTolerance = tolerance * mainMapView.getUnitsPerPixel();
 
                 // create objects required to do a selection with a query
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, map.getSpatialReference());
@@ -102,30 +132,13 @@ public class MapFragment extends Fragment {
                         for (; result.iterator().hasNext(); ++i) {
                             result.iterator().next();
                         }
-                        Toast.makeText(MapFragment.super.getContext(), i + " features selected", Toast.LENGTH_SHORT).show();
-
                     } catch (Exception e1) {
-                        Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e1.getMessage());
+                        Log.e(getResources().getString(R.string.app_name), "Failed: " + e1.getMessage());
                     }
                 });
                 return super.onSingleTapConfirmed(e);
             }
         });
-
-//        ArcGISMapImageLayer raw_solar = new ArcGISMapImageLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
-//        map.getOperationalLayers().add(raw_solar);
-
-        searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
-        searchButton = (FloatingActionButton) getActivity().findViewById(R.id.locationSearchActionButton);
-        toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
-        geocodeParams = new GeocodeParameters();
-        geocodeParams.setCountryCode("United States");
-
-        mainMapView.setMap(map);
-
-        this.setupMap();
-        this.setupTextField();
-        this.setupButtons();
     }
 
     private void setupMap() {
@@ -217,5 +230,20 @@ public class MapFragment extends Fragment {
             }
             return false;
         });
+    }
+
+    /**
+     * Setup other components beside buttons & text fields
+     */
+    private void setupOtherComponents() {
+
+        // Setup the dialog for asking user to share or save location
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        String[] optionsTitle = {"Share this place", "Save this place"};
+        builder.setTitle("Set Location");
+        builder.setItems(optionsTitle, (dialog, which) -> {
+
+        });
+        this.locationActionDialog = builder.create();
     }
 }
