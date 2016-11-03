@@ -1,11 +1,14 @@
 package umd.solarmap;
 
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -24,10 +27,15 @@ import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
+import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
+import com.esri.arcgisruntime.mapping.view.Graphic;
+import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.portal.Portal;
 import com.esri.arcgisruntime.portal.PortalItem;
+import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
+import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
@@ -61,6 +69,8 @@ public class MapFragment extends Fragment {
     private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
     private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
 
+    // Map's graphic overlay for putting markers
+    private GraphicsOverlay mapMarkersOverlay;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -78,6 +88,7 @@ public class MapFragment extends Fragment {
         toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
 
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
+        mainMapView.getGraphicsOverlays().add(mapMarkersOverlay = new GraphicsOverlay()); // Add the overlay for displaying markers to the map
 
         this.setupMap();
         this.setupTextField();
@@ -113,22 +124,38 @@ public class MapFragment extends Fragment {
             searchTextField.setEnabled(true);
 
             mainMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF); //changed from LocationDisplayManager.AutoPanMode.LOCATION
-            //mainMapView.getLocationDisplay().addLocationChangedListener(locationChangedEvent -> {
-            //    Point currentLocationPoint = locationChangedEvent.getSource().getLocation().getPosition();
-            //});
             mainMapView.getLocationDisplay().setShowLocation(true);
             mainMapView.getLocationDisplay().startAsync();
         });
 
-        mainMapView.setOnLongClickListener(view -> {
+        // Customer touch event listener class for the map view
+        // Override other touch action events in here if you want to implement
+        // new action
+        class CustomMapViewTouchListener extends DefaultMapViewOnTouchListener {
 
-            // Display the dialog
-            this.locationActionDialog.show();
+            public CustomMapViewTouchListener(Context context, MapView mapView) {
+                super(context, mapView);
+            }
 
-            Toast.makeText(getContext(), "What took you so long?", Toast.LENGTH_LONG).show();
-            // Return true that the listener has consumed the event
-            return true;
-        });
+            @Override
+            public void onLongPress(MotionEvent event) {
+
+                // NOTE: This function need to check if the user touched a marker or just a location
+
+                /*
+                // Display the dialog
+                Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(event.getX()), Math.round(event.getY())));
+                SimpleMarkerSymbol marker = new SimpleMarkerSymbol();
+
+                //final PictureMarkerSymbol marker = new PictureMarkerSymbol(String.valueOf(R.drawable.query_location_marker));
+                Graphic selectedLocationGraphic = new Graphic(clickPoint, marker);
+
+                mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
+                */
+                locationActionDialog.show();
+            }
+        }
+        mainMapView.setOnTouchListener(new CustomMapViewTouchListener(getContext(), mainMapView));
     }
 
     private void setupButtons() {
