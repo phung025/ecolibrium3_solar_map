@@ -20,13 +20,16 @@ import com.esri.arcgisruntime.datasource.FeatureQueryResult;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Envelope;
+import com.esri.arcgisruntime.geometry.Geometry;
 import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
+import com.esri.arcgisruntime.mapping.GeoElement;
 import com.esri.arcgisruntime.mapping.Viewpoint;
+import com.esri.arcgisruntime.mapping.popup.Popup;
 import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
@@ -35,6 +38,7 @@ import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -52,6 +56,7 @@ public class MapFragment extends Fragment {
     private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
     private AlertDialog locationActionDialog;
+    private Popup popup;
 
     // Map Components
     private LocatorTask locatorTask;
@@ -101,7 +106,7 @@ public class MapFragment extends Fragment {
 
         map.getOperationalLayers().add(insol_dlh_annovtpk);
         map.getOperationalLayers().add(mFeaturelayer);
-        //map.getOperationalLayers().add(raw_solar);
+        //map.getOperationalLayers().add(raw_solar); Doesn't display
 
         mainMapView.setMap(map);
 
@@ -111,13 +116,16 @@ public class MapFragment extends Fragment {
             public boolean onSingleTapConfirmed(MotionEvent e) {
 
                 Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
-                int tolerance = 44;
+                int tolerance = 40;
                 double mapTolerance = tolerance * mainMapView.getUnitsPerPixel();
 
                 // create objects required to do a selection with a query
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, map.getSpatialReference());
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
+
+                // Requires GeoElement.
+                //popup = new Popup(getContext(), GeoElement );
 
                 // call select features
                 final ListenableFuture<FeatureQueryResult> future = mFeaturelayer.selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
@@ -132,6 +140,7 @@ public class MapFragment extends Fragment {
                         for (; result.iterator().hasNext(); ++i) {
                             result.iterator().next();
                         }
+
                     } catch (Exception e1) {
                         Log.e(getResources().getString(R.string.app_name), "Failed: " + e1.getMessage());
                     }
