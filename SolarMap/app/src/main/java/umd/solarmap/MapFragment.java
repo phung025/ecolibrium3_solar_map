@@ -1,10 +1,13 @@
 package umd.solarmap;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -12,13 +15,16 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
+import com.esri.arcgisruntime.datasource.FeatureQueryResult;
+import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
+import com.esri.arcgisruntime.geometry.Envelope;
 import com.esri.arcgisruntime.geometry.Point;
-import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
+import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
@@ -44,7 +50,6 @@ public class MapFragment extends Fragment {
     private ServiceFeatureTable mServiceFeatureTable;
     private FeatureLayer mFeaturelayer;
 
-
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_map, container, false);
@@ -57,16 +62,55 @@ public class MapFragment extends Fragment {
 
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
         Basemap basemap = Basemap.createImagery();
-        ArcGISMap map = new ArcGISMap(basemap);
+        ArcGISMap map = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33");
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
         map.setInitialViewpoint(vp);
 
-        ArcGISVectorTiledLayer insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
-        map.getOperationalLayers().add(insol_dlh_annovtpk);
 
         mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k));
         mFeaturelayer = new FeatureLayer(mServiceFeatureTable);
+
+
+        mFeaturelayer.setSelectionColor(Color.YELLOW);
+        mFeaturelayer.setSelectionWidth(10);
+        // add the layer to the map
         map.getOperationalLayers().add(mFeaturelayer);
+
+        mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(MapFragment.super.getContext(), mainMapView) {
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+
+                Point clickPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
+                int tolerance = 44;
+                double mapTolerance = tolerance * mMapView.getUnitsPerPixel();
+
+                // create objects required to do a selection with a query
+                Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, map.getSpatialReference());
+                QueryParameters query = new QueryParameters();
+                query.setGeometry(envelope);
+
+                // call select features
+                final ListenableFuture<FeatureQueryResult> future = mFeaturelayer.selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
+                // add done loading listener to fire when the selection returns
+                future.addDoneListener(() -> {
+                    try {
+                        //call get on the future to get the result
+                        FeatureQueryResult result = future.get();
+
+                        //find out how many items there are in the result
+                        int i = 0;
+                        for (; result.iterator().hasNext(); ++i) {
+                            result.iterator().next();
+                        }
+                        Toast.makeText(MapFragment.super.getContext(), i + " features selected", Toast.LENGTH_SHORT).show();
+
+                    } catch (Exception e1) {
+                        Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e1.getMessage());
+                    }
+                });
+                return super.onSingleTapConfirmed(e);
+            }
+        });
 
 //        ArcGISMapImageLayer raw_solar = new ArcGISMapImageLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
 //        map.getOperationalLayers().add(raw_solar);
@@ -175,7 +219,3 @@ public class MapFragment extends Fragment {
         });
     }
 }
-
-
-
-
