@@ -6,16 +6,27 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.text.method.ScrollingMovementMethod;
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
 import android.util.Log;
+import java.util.Map;
+import java.util.Set;
+import java.util.Locale;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
+import com.esri.arcgisruntime.datasource.Feature;
 import com.esri.arcgisruntime.datasource.FeatureQueryResult;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
@@ -25,9 +36,8 @@ import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
-import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
-import com.esri.arcgisruntime.mapping.popup.Popup;
+import com.esri.arcgisruntime.mapping.view.Callout;
 import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
@@ -35,8 +45,6 @@ import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
@@ -53,7 +61,11 @@ public class MapFragment extends Fragment {
     private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
     private AlertDialog locationActionDialog;
-    private Popup popup; // Will display rooftop layer inforamtion
+    //private Popup popup; // Will display rooftop layer inforamtion
+    private android.graphics.Point mClickPoint;
+    private Callout mCallout;
+
+
 
     // Map Components
     private LocatorTask locatorTask;
@@ -87,66 +99,102 @@ public class MapFragment extends Fragment {
         this.setupButtons();
         this.setupOtherComponents();
 
-        Basemap basemap = Basemap.createImagery();
-        ArcGISMap map = new ArcGISMap(basemap);
+        //Basemap basemap = Basemap.createImagery();
+        ArcGISMap map = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33");
 
         // Setting initial view point of the map
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
         map.setInitialViewpoint(vp);
 
-        // Setup map layers
-        mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
-        mFeaturelayer.setSelectionColor(Color.rgb(0, 255, 255)); //cyan, fully opaque
-        mFeaturelayer.setSelectionWidth(3);
-        insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
-        raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
-
-        map.getOperationalLayers().add(insol_dlh_annovtpk);
-        map.getOperationalLayers().add(mFeaturelayer);
-        //map.getOperationalLayers().add(raw_solar); Doesn't display
-
+        //sets the base map
         mainMapView.setMap(map);
 
+        mCallout = mainMapView.getCallout();
+
+        // Setup map layers
+        mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
+
+        //insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
+        //raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
+
+        //map.getOperationalLayers().add(insol_dlh_annovtpk);
+        map.getOperationalLayers().add(mFeaturelayer); // adds the feature layer to the map.
+        //map.getOperationalLayers().add(raw_solar);
+
         // Listener for selecting a feature.
-        // Why doesn't this work in the context of our current project?
         mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getContext(), mainMapView) {
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-
-                Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
-                int tolerance = 40;
+                // remove any existing callouts
+                if(mCallout.isShowing()){
+                    mCallout.dismiss();
+                }
+                // User click point
+                final Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
+                // Sets the tolerance
+                int tolerance = 10;
                 double mapTolerance = tolerance * mainMapView.getUnitsPerPixel();
-
-                // create objects required to do a selection with a query
+                // Query envelope
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, map.getSpatialReference());
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
+                // Gets feature attributes
+                final ListenableFuture<FeatureQueryResult> future = mServiceFeatureTable.queryFeaturesAsync(query, ServiceFeatureTable.QueryFeatureOptions.LOAD_ALL_FEATURES);
 
-                // popup constructor requires GeoElement.
-                //popup = new Popup(getContext(), GeoElement);
+                future.addDoneListener(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            // Result
+                            FeatureQueryResult result = future.get();
 
-                // select features
-                final ListenableFuture<FeatureQueryResult> future = mFeaturelayer.selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
-                // launches after a selection
-                future.addDoneListener(() -> {
-                    try {
-                        //call get on the future to get the result
-                        FeatureQueryResult result = future.get();
+                            Iterator<Feature> iterator = result.iterator();
+                            // create a TextView to display field values
+                            TextView calloutContent = new TextView(getContext());
+                            // Sets textView settings
+                            calloutContent.setTextColor(Color.BLACK);
+                            calloutContent.setSingleLine(false);
+                            calloutContent.setVerticalScrollBarEnabled(true);
+                            calloutContent.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
+                            calloutContent.setMovementMethod(new ScrollingMovementMethod());
+                            calloutContent.setLines(5);
 
-                        //find out how many items there are in the result
-                        int i = 0;
-                        for (; result.iterator().hasNext(); ++i) {
-                            result.iterator().next();
+                            int counter = 0;
+                            Feature feature;
+                            while (iterator.hasNext()){
+                                feature = iterator.next();
+                                // create a Map of all available attributes as name value pairs
+                                Map<String, Object> attr = feature.getAttributes();
+                                Set<String> keys = attr.keySet();
+                                for(String key:keys){
+                                    Object value = attr.get(key);
+                                    // format observed field value as date
+                                    if(value instanceof GregorianCalendar){
+                                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MMM-yyyy", Locale.US);
+                                        value = simpleDateFormat.format(((GregorianCalendar) value).getTime());
+                                    }
+                                    // append name value pairs to TextView
+                                    calloutContent.append(key + " | " + value + "\n");
+                                }
+                                counter++;
+                                // center the mapview on selected feature
+                                Envelope envelope = feature.getGeometry().getExtent();
+                                mainMapView.setViewpointGeometryWithPaddingAsync(envelope, 200);
+                                // callout display
+                                mCallout.setLocation(clickPoint);
+                                mCallout.setContent(calloutContent);
+                                mCallout.show();
+                            }
+                        } catch (Exception e) {
+                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
                         }
-
-                    } catch (Exception e1) {
-                        Log.e(getResources().getString(R.string.app_name), "Failed: " + e1.getMessage());
                     }
                 });
                 return super.onSingleTapConfirmed(e);
             }
         });
     }
+
 
     private void setupMap() {
         // Set a listener that will be called when the MapView is initialized.
@@ -253,4 +301,5 @@ public class MapFragment extends Fragment {
         });
         this.locationActionDialog = builder.create();
     }
+
 }
