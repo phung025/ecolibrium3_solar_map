@@ -6,7 +6,7 @@
     <!-- Minnesota solar energy image layer -->
     <string name="raw_solar">https://gis.uspatial.umn.edu/arcgis/rest/services/solar/mn_solar/ImageServer</string>
     <!-- Rooftop layer -->
-    <string name="foot_dlh_5k">http://services.arcgis.com/8df8p0NlLFEShl0r/arcgis/rest/services/foot_dlh_5k/FeatureServer</string>
+    <string name="foot_dlh_5k">http://umn.maps.arcgis.com/home/item.html?id=3f1a6501a86948ecb167844cca02841c</string>
     <!-- Rooftop solar energy layer -->
     <string name="insol_dlh_annovtpk">http://tiles.arcgis.com/tiles/8df8p0NlLFEShl0r/arcgis/rest/services/insol_dlh_annovtpk/VectorTileServer</string>
 

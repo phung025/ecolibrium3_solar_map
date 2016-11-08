@@ -33,22 +33,29 @@
         android:layout_alignParentTop="true">
     </com.esri.arcgisruntime.mapping.view.MapView>
 
-    <EditText
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="text"
-        android:text=""
-        android:ems="10"
-        android:id="@+id/locationSearchTextField"
-        android:layout_width="300dp"
-        android:enabled="false"
-        android:hint="Search Map"
-        android:layout_marginTop="38dp"
-        android:background="@android:color/white"
-        android:paddingLeft="5dp"
-        android:paddingBottom="10dp"
-        android:paddingTop="10dp"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true" />
+        android:paddingLeft="25dp"
+        android:paddingRight="25dp">
+
+        <EditText
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:text=""
+            android:ems="10"
+            android:id="@+id/locationSearchTextField"
+            android:layout_width="match_parent"
+            android:enabled="false"
+            android:hint="Search Map"
+            android:layout_marginTop="38dp"
+            android:background="@android:color/white"
+            android:paddingLeft="5dp"
+            android:paddingBottom="10dp"
+            android:paddingTop="10dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true" />
+    </FrameLayout>
 
 
 </RelativeLayout>

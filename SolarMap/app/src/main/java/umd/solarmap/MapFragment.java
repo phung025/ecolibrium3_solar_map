@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -16,7 +17,10 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
+import com.esri.arcgisruntime.datasource.Feature;
 import com.esri.arcgisruntime.datasource.FeatureQueryResult;
+import com.esri.arcgisruntime.datasource.FeatureTable;
+import com.esri.arcgisruntime.datasource.Field;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Envelope;
@@ -24,6 +28,7 @@ import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
+import com.esri.arcgisruntime.layers.Layer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
@@ -40,6 +45,7 @@ import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -59,6 +65,7 @@ public class MapFragment extends Fragment {
     private AlertDialog locationActionDialog;
 
     // Map Components
+    private ArcGISMap mainMap;
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
 
@@ -93,23 +100,20 @@ public class MapFragment extends Fragment {
         this.setupButtons();
         this.setupOtherComponents();
 
-        Basemap basemap = Basemap.createImagery();
-        ArcGISMap map = new ArcGISMap(basemap);
-
         // Setting initial view point of the map
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
-        map.setInitialViewpoint(vp);
+        (mainMap = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33")).setInitialViewpoint(vp);
 
         // Setup map layers
-        mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
-        insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
-        raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
+        //mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
+        //insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
+        //raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
 
-        map.getOperationalLayers().add(insol_dlh_annovtpk);
-        map.getOperationalLayers().add(mFeaturelayer);
+        //map.getOperationalLayers().add(insol_dlh_annovtpk);
+        //map.getOperationalLayers().add(mFeaturelayer);
         //map.getOperationalLayers().add(raw_solar);
 
-        mainMapView.setMap(map);
+        mainMapView.setMap(mainMap);
     }
 
     private void setupMap() {
@@ -138,6 +142,10 @@ public class MapFragment extends Fragment {
             @Override
             public void onLongPress(MotionEvent event) {
 
+                for (Layer layer : mainMap.getOperationalLayers()) {
+                    System.out.println(layer.getName());
+                }
+
                 // NOTE: This function need to check if the user touched a marker or just a location
 
                 /*
@@ -152,6 +160,59 @@ public class MapFragment extends Fragment {
                 */
                 locationActionDialog.show();
             }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+
+                // get the point that was clicked and convert it to a point in map coordinates
+                Point clickPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
+                int tolerance = 44;
+                double mapTolerance = tolerance * mMapView.getUnitsPerPixel();
+
+                // create objects required to do a selection with a query
+                Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, mainMap.getSpatialReference());
+                QueryParameters query = new QueryParameters();
+                query.setGeometry(envelope);
+
+                // call select features
+                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
+                // add done loading listener to fire when the selection returns
+                future.addDoneListener(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            //call get on the future to get the result
+                            FeatureQueryResult result = future.get();
+
+                            //find out how many items there are in the result
+                            Iterator<Feature> result_iterator = result.iterator();
+                            while (result_iterator.hasNext()) {
+
+                                FeatureTable selected_building_feature_table = result_iterator.next().getFeatureTable();
+                                Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
+                                System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
+                                System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
+                                System.out.println("All fields of this feature table: ");
+                                while (all_fields_of_selected_building.hasNext()) {
+                                    Field current_field = all_fields_of_selected_building.next();
+                                    System.out.println("Name: " + current_field.getName() +
+                                            " | Alias: " + current_field.getAlias() +
+                                            " | Domain: " + current_field.getDomain() +
+                                            " | Field type: " + current_field.getFieldType().toString() +
+                                            " | Length: " + current_field.getLength());
+                                }
+
+                                System.out.println("\n\n");
+                            }
+
+                        } catch (Exception e) {
+                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                        }
+                    }
+                });
+                return super.onSingleTapConfirmed(e);
+            }
+
         }
         mainMapView.setOnTouchListener(new CustomMapViewTouchListener(getContext(), mainMapView));
     }
