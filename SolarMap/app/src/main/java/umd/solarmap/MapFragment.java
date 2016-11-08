@@ -96,18 +96,18 @@ public class MapFragment extends Fragment {
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
         mainMapView.getGraphicsOverlays().add(mapMarkersOverlay = new GraphicsOverlay()); // Add the overlay for displaying markers to the map
 
+        // Setting initial view point of the map
+        Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
+        (mainMap = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33")).setInitialViewpoint(vp);
+
         this.setupMap();
         this.setupTextField();
         this.setupButtons();
         this.setupOtherComponents();
 
-        // Setting initial view point of the map
-        Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
-        (mainMap = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33")).setInitialViewpoint(vp);
-
         // Setup map layers
         //mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
-        //insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
+        insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
         //raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
 
         //map.getOperationalLayers().add(insol_dlh_annovtpk);
@@ -129,10 +129,19 @@ public class MapFragment extends Fragment {
             mainMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF); //changed from LocationDisplayManager.AutoPanMode.LOCATION
             mainMapView.getLocationDisplay().setShowLocation(true);
             mainMapView.getLocationDisplay().startAsync();
-/*
+
+        });
+
+        // Change web map's insol_dlh_annovtpk layer to our own insol_dlh_annovtpk layer
+        mainMap.addDoneLoadingListener(() -> {
+
             if ((mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD) || (mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD.NOT_LOADED)) {
-                mainMap.retryLoadAsync();
-            }*/
+                System.out.println("MAP FAILED TO LOAD");
+
+            } else if ((mainMap.getLoadStatus() == LoadStatus.LOADED)) {
+                mainMap.getOperationalLayers().remove(0);
+                mainMap.getOperationalLayers().add(insol_dlh_annovtpk);
+            }
         });
 
         // Customer touch event listener class for the map view
@@ -146,10 +155,6 @@ public class MapFragment extends Fragment {
 
             @Override
             public void onLongPress(MotionEvent event) {
-
-                for (Layer layer : mainMap.getOperationalLayers()) {
-                    System.out.println(layer.getName());
-                }
 
                 // NOTE: This function need to check if the user touched a marker or just a location
 
@@ -180,7 +185,7 @@ public class MapFragment extends Fragment {
                 query.setGeometry(envelope);
 
                 // call select features
-                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
+                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(1)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
                 // add done loading listener to fire when the selection returns
                 future.addDoneListener(new Runnable() {
                     @Override
