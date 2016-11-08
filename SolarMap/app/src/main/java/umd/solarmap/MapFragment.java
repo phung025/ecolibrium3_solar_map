@@ -29,6 +29,7 @@ import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.layers.Layer;
+import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
@@ -128,6 +129,10 @@ public class MapFragment extends Fragment {
             mainMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF); //changed from LocationDisplayManager.AutoPanMode.LOCATION
             mainMapView.getLocationDisplay().setShowLocation(true);
             mainMapView.getLocationDisplay().startAsync();
+/*
+            if ((mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD) || (mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD.NOT_LOADED)) {
+                mainMap.retryLoadAsync();
+            }*/
         });
 
         // Customer touch event listener class for the map view
@@ -188,8 +193,10 @@ public class MapFragment extends Fragment {
                             Iterator<Feature> result_iterator = result.iterator();
                             while (result_iterator.hasNext()) {
 
-                                FeatureTable selected_building_feature_table = result_iterator.next().getFeatureTable();
-                                Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
+                                Feature current_building_feature = result.iterator().next();
+                                FeatureTable selected_building_feature_table = current_building_feature.getFeatureTable();
+                                   Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
+                                System.out.println("Building ID: " + current_building_feature.getAttributes().toString());
                                 System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
                                 System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
                                 System.out.println("All fields of this feature table: ");
