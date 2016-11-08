@@ -55,7 +55,6 @@ public class MapFragment extends Fragment {
      */
     private MapView mainMapView;
     private EditText searchTextField;
-    private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
     private AlertDialog locationActionDialog;
 
@@ -84,7 +83,6 @@ public class MapFragment extends Fragment {
 
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
-        searchButton = (FloatingActionButton) getActivity().findViewById(R.id.locationSearchActionButton);
         toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
 
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
@@ -161,41 +159,6 @@ public class MapFragment extends Fragment {
     private void setupButtons() {
 
         /**
-         * Action when clicking search location button
-         */
-        //region onClickedSearchButton()
-        searchButton.setOnClickListener(view -> {
-
-            // Hide the keyboard
-            InputMethodManager inputManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-            inputManager.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
-
-            String address = searchTextField.getText().toString();
-            if (!(address.length() == 0)) {
-                final ListenableFuture<List<GeocodeResult>> geocodeFuture = locatorTask.geocodeAsync(address, geocodeParams);
-
-                geocodeFuture.addDoneListener(() -> {
-                    try {
-                        List<GeocodeResult> geocodeResults = geocodeFuture.get();
-
-                        // Use the first result - for example display on the map
-                        if (!geocodeResults.isEmpty()) {
-                            GeocodeResult topResult = geocodeResults.get(0);
-                            mainMapView.setViewpointCenterAsync(topResult.getDisplayLocation());
-                        } else {
-                            Toast.makeText(getContext(), getString(R.string.cantFindLocation), Toast.LENGTH_LONG).show();
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                });
-            }
-
-        });
-
-        /**
          * Action when clicking go to current location button
          */
         //region onClickedToCurrentLocationButton()
@@ -219,8 +182,35 @@ public class MapFragment extends Fragment {
 
         searchTextField.setOnKeyListener((view, keyCode, keyEvent) -> {
             if (keyCode == keyEvent.KEYCODE_ENTER) {
+
                 // Start searching
-                searchButton.performClick();
+                // Hide the keyboard
+                InputMethodManager inputManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputManager.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+
+                String address = searchTextField.getText().toString();
+                if (!(address.length() == 0)) {
+                    final ListenableFuture<List<GeocodeResult>> geocodeFuture = locatorTask.geocodeAsync(address, geocodeParams);
+
+                    geocodeFuture.addDoneListener(() -> {
+                        try {
+                            List<GeocodeResult> geocodeResults = geocodeFuture.get();
+
+                            // Use the first result - for example display on the map
+                            if (!geocodeResults.isEmpty()) {
+                                GeocodeResult topResult = geocodeResults.get(0);
+                                mainMapView.setViewpointCenterAsync(topResult.getDisplayLocation());
+                            } else {
+                                Toast.makeText(getContext(), getString(R.string.cantFindLocation), Toast.LENGTH_LONG).show();
+                            }
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+
                 return true;
             }
             return false;

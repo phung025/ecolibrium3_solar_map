@@ -7,31 +7,6 @@
     tools:context="umd.solarmap.MapFragment">
 
     <!-- TODO: Update blank fragment layout -->
-    <EditText
-        android:layout_weight="2"
-        android:layout_height="wrap_content"
-        android:inputType="text"
-        android:text=""
-        android:ems="10"
-        android:id="@+id/locationSearchTextField"
-        android:layout_alignParentTop="true"
-        android:layout_width="55dp"
-        android:layout_alignParentStart="true"
-        android:layout_toStartOf="@+id/locationSearchActionButton"
-        android:enabled="false" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:clickable="true"
-        app:fabSize="mini"
-        app:srcCompat="@android:drawable/ic_menu_search"
-        android:id="@+id/locationSearchActionButton"
-        android:layout_weight="1"
-        app:backgroundTint="@android:color/holo_orange_light"
-        app:elevation="0dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true" />
 
     <android.support.design.widget.FloatingActionButton
         android:layout_width="55dp"
@@ -54,9 +29,26 @@
         mapoptions.MapType="Streets"
         mapoptions.center="34.056215, -117.195668"
         mapoptions.ZoomLevel="16"
-        android:layout_below="@+id/locationSearchTextField"
-        android:layout_alignParentStart="true">
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true">
     </com.esri.arcgisruntime.mapping.view.MapView>
+
+    <EditText
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:text=""
+        android:ems="10"
+        android:id="@+id/locationSearchTextField"
+        android:layout_width="300dp"
+        android:enabled="false"
+        android:hint="Search Map"
+        android:layout_marginTop="38dp"
+        android:background="@android:color/white"
+        android:paddingLeft="5dp"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
 
 
 </RelativeLayout>
