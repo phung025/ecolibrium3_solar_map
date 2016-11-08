@@ -61,21 +61,11 @@ public class MapFragment extends Fragment {
     private FloatingActionButton searchButton;
     private FloatingActionButton toCurrentLocationButton;
     private AlertDialog locationActionDialog;
-    //private Popup popup; // Will display rooftop layer inforamtion
-    private android.graphics.Point mClickPoint;
     private Callout mCallout;
-
-
 
     // Map Components
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
-
-    // Map Layers
-    private ServiceFeatureTable mServiceFeatureTable;
-    private FeatureLayer mFeaturelayer;                 // Rooftop layer
-    private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
-    private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -99,7 +89,6 @@ public class MapFragment extends Fragment {
         this.setupButtons();
         this.setupOtherComponents();
 
-        //Basemap basemap = Basemap.createImagery();
         ArcGISMap map = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33");
 
         // Setting initial view point of the map
@@ -109,17 +98,8 @@ public class MapFragment extends Fragment {
         //sets the base map
         mainMapView.setMap(map);
 
+        //Gets the callout
         mCallout = mainMapView.getCallout();
-
-        // Setup map layers
-        mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
-
-        //insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
-        //raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
-
-        //map.getOperationalLayers().add(insol_dlh_annovtpk);
-        map.getOperationalLayers().add(mFeaturelayer); // adds the feature layer to the map.
-        //map.getOperationalLayers().add(raw_solar);
 
         // Listener for selecting a feature.
         mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getContext(), mainMapView) {
@@ -131,15 +111,15 @@ public class MapFragment extends Fragment {
                 }
                 // User click point
                 final Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
-                // Sets the tolerance
+                // Map tolerance
                 int tolerance = 10;
                 double mapTolerance = tolerance * mainMapView.getUnitsPerPixel();
                 // Query envelope
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, map.getSpatialReference());
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
-                // Gets feature attributes
-                final ListenableFuture<FeatureQueryResult> future = mServiceFeatureTable.queryFeaturesAsync(query, ServiceFeatureTable.QueryFeatureOptions.LOAD_ALL_FEATURES);
+                // Gets feature attributes. Change made HERE, making the select feature call on the service is incorrect.
+                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)map.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
 
                 future.addDoneListener(new Runnable() {
                     @Override
@@ -151,7 +131,7 @@ public class MapFragment extends Fragment {
                             Iterator<Feature> iterator = result.iterator();
                             // create a TextView to display field values
                             TextView calloutContent = new TextView(getContext());
-                            // Sets textView settings
+                            // Sets textView setting
                             calloutContent.setTextColor(Color.BLACK);
                             calloutContent.setSingleLine(false);
                             calloutContent.setVerticalScrollBarEnabled(true);
