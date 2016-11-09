@@ -1,19 +1,38 @@
 package umd.solarmap;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+
+import android.graphics.Color;
+import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.Fragment;
+import android.text.method.ScrollingMovementMethod;
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
+import android.util.Log;
+import java.util.Map;
+import java.util.Set;
+import java.util.Locale;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
@@ -21,6 +40,8 @@ import com.esri.arcgisruntime.datasource.Feature;
 import com.esri.arcgisruntime.datasource.FeatureQueryResult;
 import com.esri.arcgisruntime.datasource.FeatureTable;
 import com.esri.arcgisruntime.datasource.Field;
+
+
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Envelope;
@@ -31,11 +52,15 @@ import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.layers.Layer;
 import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
-import com.esri.arcgisruntime.mapping.Basemap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
+
 import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
 import com.esri.arcgisruntime.mapping.view.Graphic;
 import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
+
+import com.esri.arcgisruntime.mapping.view.Callout;
+import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
+
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.portal.Portal;
@@ -45,10 +70,6 @@ import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
@@ -63,7 +84,7 @@ public class MapFragment extends Fragment {
     private MapView mainMapView;
     private EditText searchTextField;
     private FloatingActionButton toCurrentLocationButton;
-    private AlertDialog locationActionDialog;
+    private android.app.AlertDialog locationActionDialog;
 
     // Map Components
     private ArcGISMap mainMap;
@@ -79,6 +100,8 @@ public class MapFragment extends Fragment {
     // Map's graphic overlay for putting markers
     private GraphicsOverlay mapMarkersOverlay;
 
+    private Callout mCallout;
+
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_map, container, false);
@@ -88,12 +111,14 @@ public class MapFragment extends Fragment {
         super.onActivityCreated(savedInstance);
 
         locatorTask = new LocatorTask(getString(R.string.geocode));
+        insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
 
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
         toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
 
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
+
         mainMapView.getGraphicsOverlays().add(mapMarkersOverlay = new GraphicsOverlay()); // Add the overlay for displaying markers to the map
 
         // Setting initial view point of the map
@@ -105,17 +130,86 @@ public class MapFragment extends Fragment {
         this.setupButtons();
         this.setupOtherComponents();
 
-        // Setup map layers
-        //mFeaturelayer = new FeatureLayer(mServiceFeatureTable = new ServiceFeatureTable(getString(R.string.foot_dlh_5k)));
-        insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
-        //raw_solar = new ArcGISTiledLayer(getString(R.string.raw_solar)); // <--- Layer doesnt work and probably isnt even supported
-
-        //map.getOperationalLayers().add(insol_dlh_annovtpk);
-        //map.getOperationalLayers().add(mFeaturelayer);
-        //map.getOperationalLayers().add(raw_solar);
-
+        //sets the base map
         mainMapView.setMap(mainMap);
+
+        //Gets the callout
+        mCallout = mainMapView.getCallout();
+
+        // Listener for selecting a feature.
+        mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getContext(), mainMapView) {
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                // remove any existing callouts
+                if(mCallout.isShowing()){
+                    mCallout.dismiss();
+                }
+                // User click point
+                final Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
+                // Map tolerance
+                int tolerance = 10;
+                double mapTolerance = tolerance * mainMapView.getUnitsPerPixel();
+                // Query envelope
+                Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, mainMap.getSpatialReference());
+                QueryParameters query = new QueryParameters();
+                query.setGeometry(envelope);
+                // Gets feature attributes. Change made HERE, making the select feature call on the service is incorrect.
+                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
+
+                future.addDoneListener(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            // Result
+                            FeatureQueryResult result = future.get();
+
+                            Iterator<Feature> iterator = result.iterator();
+                            // create a TextView to display field values
+                            TextView calloutContent = new TextView(getContext());
+                            // Sets textView setting
+                            calloutContent.setTextColor(Color.BLACK);
+                            calloutContent.setSingleLine(false);
+                            calloutContent.setVerticalScrollBarEnabled(true);
+                            calloutContent.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
+                            calloutContent.setMovementMethod(new ScrollingMovementMethod());
+                            calloutContent.setLines(5);
+
+                            int counter = 0;
+                            Feature feature;
+                            while (iterator.hasNext()){
+                                feature = iterator.next();
+                                // create a Map of all available attributes as name value pairs
+                                Map<String, Object> attr = feature.getAttributes();
+                                Set<String> keys = attr.keySet();
+                                for(String key:keys){
+                                    Object value = attr.get(key);
+                                    // format observed field value as date
+                                    if(value instanceof GregorianCalendar){
+                                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MMM-yyyy", Locale.US);
+                                        value = simpleDateFormat.format(((GregorianCalendar) value).getTime());
+                                    }
+                                    // append name value pairs to TextView
+                                    calloutContent.append(key + " | " + value + "\n");
+                                }
+                                counter++;
+                                // center the mapview on selected feature
+                                Envelope envelope = feature.getGeometry().getExtent();
+                                mainMapView.setViewpointGeometryWithPaddingAsync(envelope, 200);
+                                // callout display
+                                mCallout.setLocation(clickPoint);
+                                mCallout.setContent(calloutContent);
+                                mCallout.show();
+                            }
+                        } catch (Exception e) {
+                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                        }
+                    }
+                });
+                return super.onSingleTapConfirmed(e);
+            }
+        });
     }
+
 
     private void setupMap() {
         // Set a listener that will be called when the MapView is initialized.
@@ -290,14 +384,13 @@ public class MapFragment extends Fragment {
         });
     }
 
-
     /**
      * Setup other components beside buttons & text fields
      */
     private void setupOtherComponents() {
 
         // Setup the dialog for asking user to share or save location
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
         String[] optionsTitle = {"Share this place", "Save this place"};
         builder.setTitle("Set Location");
         builder.setItems(optionsTitle, (dialog, which) -> {
@@ -306,7 +399,3 @@ public class MapFragment extends Fragment {
         this.locationActionDialog = builder.create();
     }
 }
-
-
-
-
