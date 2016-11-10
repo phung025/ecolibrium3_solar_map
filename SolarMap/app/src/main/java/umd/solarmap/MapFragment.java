@@ -1,33 +1,14 @@
 package umd.solarmap;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.graphics.drawable.BitmapDrawable;
-import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.Fragment;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
-
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
-import java.text.SimpleDateFormat;
-import java.util.GregorianCalendar;
 import android.util.Log;
-import java.util.Map;
-import java.util.Set;
-import java.util.Locale;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
-
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -40,36 +21,32 @@ import com.esri.arcgisruntime.datasource.Feature;
 import com.esri.arcgisruntime.datasource.FeatureQueryResult;
 import com.esri.arcgisruntime.datasource.FeatureTable;
 import com.esri.arcgisruntime.datasource.Field;
-
-
 import com.esri.arcgisruntime.datasource.QueryParameters;
-import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Envelope;
 import com.esri.arcgisruntime.geometry.Point;
-import com.esri.arcgisruntime.layers.ArcGISTiledLayer;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.layers.Layer;
 import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
-
-import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
-import com.esri.arcgisruntime.mapping.view.Graphic;
-import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
-
 import com.esri.arcgisruntime.mapping.view.Callout;
 import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
-
+import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
-import com.esri.arcgisruntime.portal.Portal;
-import com.esri.arcgisruntime.portal.PortalItem;
-import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
-import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
+
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
@@ -92,10 +69,10 @@ public class MapFragment extends Fragment {
     private GeocodeParameters geocodeParams;
 
     // Map Layers
-    private ServiceFeatureTable mServiceFeatureTable;
-    private FeatureLayer mFeaturelayer;                 // Rooftop layer
+//    private ServiceFeatureTable mServiceFeatureTable;
+//    private FeatureLayer mFeaturelayer;                 // Rooftop layer
     private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
-    private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
+//    private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
 
     // Map's graphic overlay for putting markers
     private GraphicsOverlay mapMarkersOverlay;
@@ -233,8 +210,14 @@ public class MapFragment extends Fragment {
                 System.out.println("MAP FAILED TO LOAD");
 
             } else if ((mainMap.getLoadStatus() == LoadStatus.LOADED)) {
-                mainMap.getOperationalLayers().remove(0);
-                mainMap.getOperationalLayers().add(insol_dlh_annovtpk);
+
+
+                for (Layer layer : mainMap.getOperationalLayers()) {
+
+                    System.out.println(layer.getName() + layer.getId());
+                }
+
+                mainMap.getOperationalLayers().set(0, insol_dlh_annovtpk);
             }
         });
 
@@ -249,6 +232,8 @@ public class MapFragment extends Fragment {
 
             @Override
             public void onLongPress(MotionEvent event) {
+
+
 
                 // NOTE: This function need to check if the user touched a marker or just a location
 
@@ -279,7 +264,7 @@ public class MapFragment extends Fragment {
                 query.setGeometry(envelope);
 
                 // call select features
-                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(1)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
+                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(0)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
                 // add done loading listener to fire when the selection returns
                 future.addDoneListener(new Runnable() {
                     @Override
@@ -335,7 +320,8 @@ public class MapFragment extends Fragment {
             // If the current location is detected
             if (currentLocationPoint != null) {
                 // Zoom the map to current location
-                mainMapView.setViewpointCenterAsync(mainMapView.getLocationDisplay().getLocation().getPosition());
+                Viewpoint vp  = new Viewpoint(mainMapView.getLocationDisplay().getLocation().getPosition(), 4000.0);
+                mainMapView.setViewpointAsync(vp);
             } else {
                 Toast.makeText(getContext(), getString(R.string.cantLocateCurrentPosition), Toast.LENGTH_LONG).show();
             }
