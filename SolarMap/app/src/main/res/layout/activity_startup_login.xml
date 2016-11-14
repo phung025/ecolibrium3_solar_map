@@ -77,7 +77,8 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/sign_up_button"
                 android:background="@drawable/button_red_border"
-                android:textColor="@android:color/white" />
+                android:textColor="@android:color/white"
+                android:onClick="onTouchSignUpButton" />
 
             <Button
                 android:id="@+id/sign_in_button"
