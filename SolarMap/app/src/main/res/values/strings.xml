@@ -8,7 +8,11 @@
     <!-- Rooftop layer -->
     <string name="foot_dlh_5k">http://umn.maps.arcgis.com/home/item.html?id=3f1a6501a86948ecb167844cca02841c</string>
     <!-- Rooftop solar energy layer -->
-    <string name="insol_dlh_annovtpk">http://tiles.arcgis.com/tiles/8df8p0NlLFEShl0r/arcgis/rest/services/insol_dlh_annovtpk/VectorTileServer</string>
+    <string name="insol_dlh_annovtpk">http://tiles.arcgis.com/tiles/8df8p0NlLFEShl0r/arcgis/rest/services/insol_dlh_annovtpk/VectorTileServer</string>s
+    <!--Web app version-->
+    <string name="solar_potential_map_2">http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33</string>
+    <!--XML file filled with information of past solar projects-->
+    <string name="past_projects">http://www.cleanenergyprojectbuilder.org/solar-projects.xml</string>
 
     <string name="country_code">United States</string>
 

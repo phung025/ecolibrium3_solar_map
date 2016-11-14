@@ -38,7 +38,6 @@ import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
-import com.esri.arcgisruntime.symbology.Symbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
@@ -103,7 +102,7 @@ public class MapFragment extends Fragment {
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
         toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
 
-        new XMLParser().execute("http://www.cleanenergyprojectbuilder.org/solar-projects.xml");
+        new XMLParser().execute(getString(R.string.past_projects));
 
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
 
@@ -111,7 +110,7 @@ public class MapFragment extends Fragment {
 
         // Setting initial view point of the map
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
-        (mainMap = new ArcGISMap("http://umn.maps.arcgis.com/home/item.html?id=53151b88aa124cf09d5a58c02bfe5a33")).setInitialViewpoint(vp);
+        (mainMap = new ArcGISMap(getString(R.string.solar_potential_map_2))).setInitialViewpoint(vp);
 
         this.setupMap();
         this.setupTextField();
@@ -400,7 +399,7 @@ public class MapFragment extends Fragment {
 
         protected List<SolarProject> doInBackground(String... params) {
             URL url;
-            List<SolarProject> a = new ArrayList<SolarProject>();
+            List<SolarProject> a = new ArrayList<>();
             try {
                 url = new URL(params[0]);
                 XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
