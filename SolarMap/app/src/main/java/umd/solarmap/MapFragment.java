@@ -2,6 +2,7 @@ package umd.solarmap;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
@@ -32,14 +33,22 @@ import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
 import com.esri.arcgisruntime.mapping.view.Callout;
 import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
+import com.esri.arcgisruntime.mapping.view.Graphic;
 import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
+import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
+import com.esri.arcgisruntime.symbology.Symbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
+
+import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
@@ -93,6 +102,8 @@ public class MapFragment extends Fragment {
         mainMapView = (MapView) getActivity().findViewById(R.id.mainMapView);
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
         toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
+
+        new XMLParser().execute("http://www.cleanenergyprojectbuilder.org/solar-projects.xml");
 
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
 
@@ -383,5 +394,65 @@ public class MapFragment extends Fragment {
 
         });
         this.locationActionDialog = builder.create();
+    }
+
+    private class XMLParser extends AsyncTask<String, Integer, List<SolarProject>> {
+
+        protected List<SolarProject> doInBackground(String... params) {
+            URL url;
+            List<SolarProject> a = new ArrayList<SolarProject>();
+            try {
+                url = new URL(params[0]);
+                XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+                XmlPullParser xpp = factory.newPullParser();
+                xpp.setInput(url.openStream(), null);
+                while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
+                    if (xpp.getEventType() == XmlPullParser.START_TAG) {
+                        SolarProject d = new SolarProject();
+                        String s = xpp.getName();
+                        if (s.equals("title")) {
+                            d.title = xpp.nextText();
+                        }
+                        if (s.equals("description")) {
+                            d.des = xpp.nextText();
+                        }
+                        if (s.equals("link")) {
+                            d.ulink = xpp.getAttributeValue(null, "href");
+                            if (d.ulink == null) {
+                                d.ulink = xpp.nextText();
+                            }
+                        }
+                        if (s.equals("pubDate") || s.equals("updated")) {
+                            d.upd = xpp.nextText();
+                        }
+                        if (s.equals("georss:point")) {
+                            String posi = xpp.nextText();
+                            String[] strings = posi.split(" ");
+                            double lat = Double.valueOf(strings[0]);
+                            double longe = Double.valueOf(strings[1]);
+                            d.p = new Point(lat, longe);
+                        }
+                        a.add(d);
+                    } else if (xpp.getEventType() == XmlPullParser.END_TAG) {
+
+                    }
+                    xpp.next();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return a;
+        }
+        protected void onPostExecute(List<SolarProject> result) {
+            GraphicsOverlay graphicsOverlay = new GraphicsOverlay();
+            mainMapView.getGraphicsOverlays().add(graphicsOverlay);
+            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.RED, 12);
+            for (SolarProject s : result) {
+                if (s.p != null) {
+                    Graphic graphic = new Graphic(s.p, z);
+                    graphicsOverlay.getGraphics().add(graphic);
+                }
+            }
+        }
     }
 }
