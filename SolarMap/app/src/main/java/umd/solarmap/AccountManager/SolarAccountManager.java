@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import umd.solarmap.HTTPAsyncTask;
 import umd.solarmap.SolarData.SolarAchievement;
+import umd.solarmap.SolarData.SolarLocation;
 
 /**
  * Created by user on 11/15/16.
@@ -51,7 +52,9 @@ public class SolarAccountManager implements Serializable {
     private String password = null;
 
     // User's account data
-    List<SolarAchievement> solarAchievementList;
+    List<SolarAchievement> solarAchievementList; // User's achievements list
+    List<SolarLocation> userPrivateLocationList; // User's private interested location
+    List<SolarLocation> sharedLocationList; // Global locations list shared by all users
 
     /**
      * Defaul constructor. Declared as private in order to use singleton pattern
@@ -60,6 +63,8 @@ public class SolarAccountManager implements Serializable {
 
         // Set up all initial components of this class
         solarAchievementList = new LinkedList<SolarAchievement>();
+        userPrivateLocationList = new LinkedList<SolarLocation>();
+        sharedLocationList = new LinkedList<SolarLocation>();
 
         // Sign in the account if the information is already stored on the device
     }
@@ -170,6 +175,7 @@ public class SolarAccountManager implements Serializable {
         this.password = password;
     }
 
+    // Actions for saving or sharing the locations. This enumeration is used only in save location and share location methods
     private enum INTERESTED_LOCATION_ACTION {
         SAVE,
         SHARE
