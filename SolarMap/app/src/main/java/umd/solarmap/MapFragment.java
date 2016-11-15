@@ -24,7 +24,9 @@ import com.esri.arcgisruntime.datasource.FeatureTable;
 import com.esri.arcgisruntime.datasource.Field;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.geometry.Envelope;
+import com.esri.arcgisruntime.geometry.GeometryEngine;
 import com.esri.arcgisruntime.geometry.Point;
+import com.esri.arcgisruntime.geometry.SpatialReferences;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.layers.Layer;
@@ -105,8 +107,8 @@ public class MapFragment extends Fragment {
         new XMLParser().execute(getString(R.string.past_projects));
 
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
-
-        mainMapView.getGraphicsOverlays().add(mapMarkersOverlay = new GraphicsOverlay()); // Add the overlay for displaying markers to the map
+        mapMarkersOverlay = new GraphicsOverlay();
+        mainMapView.getGraphicsOverlays().add(mapMarkersOverlay); // Add the overlay for displaying markers to the map
 
         // Setting initial view point of the map
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
@@ -262,7 +264,7 @@ public class MapFragment extends Fragment {
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-
+                System.out.println("X: " + e.getX() + "\nY: "+ e.getY());
                 // get the point that was clicked and convert it to a point in map coordinates
                 Point clickPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
                 int tolerance = 44;
@@ -428,8 +430,10 @@ public class MapFragment extends Fragment {
                             String posi = xpp.nextText();
                             String[] strings = posi.split(" ");
                             double lat = Double.valueOf(strings[0]);
-                            double longe = Double.valueOf(strings[1]);
-                            d.p = new Point(lat, longe);
+                            double lon = Double.valueOf(strings[1]);
+                            d.p = new Point(lon, lat);
+//                            d.p = new Point(lat, lon, SpatialReferences.getWgs84());
+                            d.p = (Point) GeometryEngine.project(new Point(lon,lat, SpatialReferences.getWgs84()), SpatialReferences.getWgs84());
                         }
                         a.add(d);
                     } else if (xpp.getEventType() == XmlPullParser.END_TAG) {
@@ -443,13 +447,14 @@ public class MapFragment extends Fragment {
             return a;
         }
         protected void onPostExecute(List<SolarProject> result) {
-            GraphicsOverlay graphicsOverlay = new GraphicsOverlay();
-            mainMapView.getGraphicsOverlays().add(graphicsOverlay);
-            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.RED, 12);
+            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
             for (SolarProject s : result) {
                 if (s.p != null) {
+
+                    //System.out.println(insol_dlh_annovtpk.getSpatialReference().isGeographic());
+                    System.out.println("X: " + s.p.getX() + "\nY: "+ s.p.getY());
                     Graphic graphic = new Graphic(s.p, z);
-                    graphicsOverlay.getGraphics().add(graphic);
+                    mapMarkersOverlay.getGraphics().add(graphic);
                 }
             }
         }
