@@ -52,5 +52,4 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.google.android.gms:play-services-maps:9.8.0'
     compile 'com.android.support:multidex:1.0.1'
-    compile files('libs/unirest-java-1.4.9.jar')
 }
