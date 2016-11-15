@@ -24,7 +24,6 @@ import com.esri.arcgisruntime.datasource.FeatureTable;
 import com.esri.arcgisruntime.datasource.Field;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.geometry.Envelope;
-import com.esri.arcgisruntime.geometry.GeometryEngine;
 import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.geometry.SpatialReferences;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
@@ -65,9 +64,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class MapFragment extends Fragment {
 
-    /**
-     * Instance field
-     */
+    // Instance field
     private MapView mainMapView;
     private EditText searchTextField;
     private FloatingActionButton toCurrentLocationButton;
@@ -79,10 +76,7 @@ public class MapFragment extends Fragment {
     private GeocodeParameters geocodeParams;
 
     // Map Layers
-//    private ServiceFeatureTable mServiceFeatureTable;
-//    private FeatureLayer mFeaturelayer;                 // Rooftop layer
     private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
-//    private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
 
     // Map's graphic overlay for putting markers
     private GraphicsOverlay mapMarkersOverlay;
@@ -397,43 +391,43 @@ public class MapFragment extends Fragment {
         this.locationActionDialog = builder.create();
     }
 
+    //reaches out to an xml file by its url and parses it as a georss feed, takes in a url
     private class XMLParser extends AsyncTask<String, Integer, List<SolarProject>> {
-
         protected List<SolarProject> doInBackground(String... params) {
             URL url;
             List<SolarProject> a = new ArrayList<>();
             try {
                 url = new URL(params[0]);
+
+                //parsing utility for xml
                 XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
                 XmlPullParser xpp = factory.newPullParser();
+
+                //open xml file
                 xpp.setInput(url.openStream(), null);
+
+                // go through xml file and generate a solar project object for each entry
                 while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
                     if (xpp.getEventType() == XmlPullParser.START_TAG) {
                         SolarProject d = new SolarProject();
                         String s = xpp.getName();
                         if (s.equals("title")) {
                             d.title = xpp.nextText();
-                        }
-                        if (s.equals("description")) {
+                        } else if (s.equals("description")) {
                             d.des = xpp.nextText();
-                        }
-                        if (s.equals("link")) {
+                        } else if (s.equals("link")) {
                             d.ulink = xpp.getAttributeValue(null, "href");
                             if (d.ulink == null) {
                                 d.ulink = xpp.nextText();
                             }
-                        }
-                        if (s.equals("pubDate") || s.equals("updated")) {
+                        } else if (s.equals("pubDate") || s.equals("updated")) {
                             d.upd = xpp.nextText();
-                        }
-                        if (s.equals("georss:point")) {
+                        } else if (s.equals("georss:point")) {
                             String posi = xpp.nextText();
                             String[] strings = posi.split(" ");
                             double lat = Double.valueOf(strings[0]);
                             double lon = Double.valueOf(strings[1]);
-                            d.p = new Point(lon, lat);
-//                            d.p = new Point(lat, lon, SpatialReferences.getWgs84());
-                            d.p = (Point) GeometryEngine.project(new Point(lon,lat, SpatialReferences.getWgs84()), SpatialReferences.getWgs84());
+                            d.p = new Point(lon, lat, SpatialReferences.getWgs84());
                         }
                         a.add(d);
                     } else if (xpp.getEventType() == XmlPullParser.END_TAG) {
@@ -444,15 +438,18 @@ public class MapFragment extends Fragment {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            //return a list of the solarproject objects
             return a;
         }
+
+        // add the graphic to the map
         protected void onPostExecute(List<SolarProject> result) {
+            // create the symbol to mark on the map
             SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
+
+            // display each point on the map
             for (SolarProject s : result) {
                 if (s.p != null) {
-
-                    //System.out.println(insol_dlh_annovtpk.getSpatialReference().isGeographic());
-                    System.out.println("X: " + s.p.getX() + "\nY: "+ s.p.getY());
                     Graphic graphic = new Graphic(s.p, z);
                     mapMarkersOverlay.getGraphics().add(graphic);
                 }
