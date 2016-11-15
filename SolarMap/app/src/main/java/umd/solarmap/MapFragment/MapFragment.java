@@ -3,7 +3,6 @@ package umd.solarmap.MapFragment;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
@@ -39,7 +38,6 @@ import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
-import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
@@ -69,7 +67,6 @@ public class MapFragment extends Fragment {
     private MapView mainMapView;
     private EditText searchTextField;
     private FloatingActionButton toCurrentLocationButton;
-
 
     // Map Components
     private ArcGISMap mainMap;
@@ -180,9 +177,24 @@ public class MapFragment extends Fragment {
 
                 mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
 
-                (new CustomShareLocationDialog(getActivity(),
-                        markerPoint.getX(),
-                        markerPoint.getY())).show();
+                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+                String[] optionsTitle = {"Share this place", "Save this place"};
+                builder.setTitle("Set Location");
+                builder.setItems(optionsTitle, (dialog, which) -> {
+
+                    final double longitude = markerPoint.getX();
+                    final double latitude = markerPoint.getY();
+
+                    if (which == 0) {
+                        System.out.println("You chose to share location");
+                        SolarAccountManager.appAccountManager().shareInterestedLocation("location name", longitude, latitude);
+                    } else {
+                        System.out.println("You chose to save location");
+                        SolarAccountManager.appAccountManager().saveInterestedLocation("location name", longitude, latitude);
+                    }
+                });
+
+                (builder.create()).show();
             }
 
             @Override
