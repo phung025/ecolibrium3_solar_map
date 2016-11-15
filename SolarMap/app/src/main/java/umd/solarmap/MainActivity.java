@@ -61,8 +61,8 @@ public class MainActivity extends AppCompatActivity
         this.switchFragment(MAP_FRAGMENT_ID);
 
         // Switch to login activity if user's not logged in, this will later be moved to onStart()
-//        Intent intent = new Intent(this, StartupLoginActivity.class);
-  //      startActivity(intent);
+        Intent intent = new Intent(this, StartupLoginActivity.class);
+        startActivity(intent);
     }
 
     @Override
