@@ -1,4 +1,4 @@
-package umd.solarmap;
+package umd.solarmap.MapFragment;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -53,6 +53,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import umd.solarmap.AccountManager.SolarAccountManager;
+import umd.solarmap.R;
+
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
  * One difference when creating a Fragment is that you must use the onCreateView() callback to define the layout. In fact, this is the only callback you need in order
@@ -66,7 +69,7 @@ public class MapFragment extends Fragment {
     private MapView mainMapView;
     private EditText searchTextField;
     private FloatingActionButton toCurrentLocationButton;
-    private android.app.AlertDialog locationActionDialog;
+
 
     // Map Components
     private ArcGISMap mainMap;
@@ -74,10 +77,7 @@ public class MapFragment extends Fragment {
     private GeocodeParameters geocodeParams;
 
     // Map Layers
-//    private ServiceFeatureTable mServiceFeatureTable;
-//    private FeatureLayer mFeaturelayer;                 // Rooftop layer
     private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
-//    private ArcGISTiledLayer raw_solar;                 // Raw solar energy image layer
 
     // Map's graphic overlay for putting markers
     private GraphicsOverlay mapMarkersOverlay;
@@ -110,7 +110,6 @@ public class MapFragment extends Fragment {
         this.setupMap();
         this.setupTextField();
         this.setupButtons();
-        this.setupOtherComponents();
 
         //sets the base map
         mainMapView.setMap(mainMap);
@@ -165,8 +164,6 @@ public class MapFragment extends Fragment {
             @Override
             public void onLongPress(MotionEvent event) {
 
-
-
                 // NOTE: This function need to check if the user touched a marker or just a location
 
 
@@ -174,7 +171,7 @@ public class MapFragment extends Fragment {
                 Point markerPoint = (Point) GeometryEngine.project(mainMapView.screenToLocation(new android.graphics.Point(Math.round(event.getX()), Math.round(event.getY()))), SpatialReferences.getWgs84());
 
                 //create a simple marker symbol
-                int color = Color.rgb(255, 0, 0); //red, fully opaque
+                //int color = Color.rgb(255, 0, 0); //red, fully opaque
                 //SimpleMarkerSymbol marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CIRCLE, color, 9); //size 12, style of circle
 
                 BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.query_location_marker);
@@ -183,7 +180,9 @@ public class MapFragment extends Fragment {
 
                 mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
 
-                locationActionDialog.show();
+                (new CustomShareLocationDialog(getActivity(),
+                        markerPoint.getX(),
+                        markerPoint.getY())).show();
             }
 
             @Override
@@ -320,20 +319,5 @@ public class MapFragment extends Fragment {
             }
             return false;
         });
-    }
-
-    /**
-     * Setup other components beside buttons & text fields
-     */
-    private void setupOtherComponents() {
-
-        // Setup the dialog for asking user to share or save location
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-        String[] optionsTitle = {"Share this place", "Save this place"};
-        builder.setTitle("Set Location");
-        builder.setItems(optionsTitle, (dialog, which) -> {
-
-        });
-        this.locationActionDialog = builder.create();
     }
 }

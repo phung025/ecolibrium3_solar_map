@@ -40,26 +40,8 @@ public class StartupLoginActivity extends AppCompatActivity {
     public void onTouchSignUpButton(View view) {
 
         // Both text fields must not be empty
-
-        try {
-            String email_address = mEmailView.getText().toString();
-            String password = mPasswordView.getText().toString();
-
-            JSONObject signUpInfo = new JSONObject();
-            signUpInfo.put("email", email_address);
-            signUpInfo.put("password", password);
-
-            HTTPAsyncTask jsonResponse ;
-            (jsonResponse = new HTTPAsyncTask() {
-                @Override
-                protected void onPostExecute(String result) {
-                    System.out.println(result);
-                }
-            }).execute("http://10.0.2.2:4321/registerAccount", "POST", signUpInfo.toString());
-
-        } catch (JSONException jsonException) {
-            jsonException.printStackTrace();
-        }
+        String email_address = mEmailView.getText().toString();
+        String password = mPasswordView.getText().toString();
     }
 }
 
