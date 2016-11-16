@@ -26,7 +26,7 @@ public class SolarAccountManager implements Serializable {
 
     // URI Links
     private class URIs {
-        public static final String ACCOUNT_LOGIN = "";
+        public static final String ACCOUNT_LOGIN = "loginAccount";
         public static final String ACCOUNT_SIGN_UP = "registerAccount";
         public static final String ACCOUNT_SAVE_LOCATION = "saveLocation";
         public static final String ACCOUNT_SHARE_LOCATION = "shareLocation";
@@ -214,6 +214,13 @@ public class SolarAccountManager implements Serializable {
             exception.printStackTrace();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
+        }
+
+        // If successfully save/share location, add it to the local list
+        if (success[0] && (action == INTERESTED_LOCATION_ACTION.SAVE)) {
+
+        } else if (success[0] && (action == INTERESTED_LOCATION_ACTION.SHARE)) {
+
         }
 
         return success[0];

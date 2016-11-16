@@ -1,4 +1,4 @@
-package umd.solarmap.MapFragment;
+package umd.solarmap;
 
 import android.content.Context;
 import android.graphics.Color;
