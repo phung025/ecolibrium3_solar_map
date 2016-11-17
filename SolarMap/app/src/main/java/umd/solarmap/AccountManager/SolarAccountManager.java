@@ -26,10 +26,12 @@ public class SolarAccountManager implements Serializable {
 
     // URI Links
     private class URIs {
-        public static final String ACCOUNT_LOGIN = "loginAccount";
-        public static final String ACCOUNT_SIGN_UP = "registerAccount";
-        public static final String ACCOUNT_SAVE_LOCATION = "saveLocation";
-        public static final String ACCOUNT_SHARE_LOCATION = "shareLocation";
+        public static final String ACCOUNT_LOGIN = "/login";
+        public static final String ACCOUNT_SIGN_UP = "/registerAccount";
+        public static final String ACCOUNT_SAVE_LOCATION = "/addPrivateLocation";
+        public static final String ACCOUNT_SHARE_LOCATION = "/addPublicLocation";
+        public static final String ACCOUNT_LOAD_PRIVATE_LOCATION = "/getPrivateLocation";
+        public static final String ACCOUNT_LOAD_PUBLIC_LOCATION = "/getPublicLocation";
     }
 
     // HTTP Methods
@@ -48,8 +50,9 @@ public class SolarAccountManager implements Serializable {
     public static boolean LOGIN_STATUS = false;
 
     // User's account info
-    private String email = null;
-    private String password = null;
+    private String account_private_id = null; // This one should never be public
+    private String account_email = null;
+    private String account_password = null;
 
     // User's account data
     List<SolarAchievement> solarAchievementList; // User's achievements list
@@ -87,36 +90,21 @@ public class SolarAccountManager implements Serializable {
      ******************************/
 
     /**
-     *
+     * Login to the app
      * @param email_address
-     * @param password
+     * @param input_password
      * @return
      */
-    public boolean login(String email_address, String password) {
-
-        boolean sucess = false;
-
-        LOGIN_STATUS = true;
-
-        return sucess;
-    }
-
-    /**
-     *
-     * @param email_address
-     * @param password
-     * @return
-     */
-    public boolean signUp(String email_address, String password) {
+    public boolean login(String email_address, String input_password) {
 
         boolean[] success = {false};
 
         try {
 
             // Create JSON Object containing all information of the new user
-            JSONObject signUpInfo = new JSONObject();
-            signUpInfo.put("email", email_address);
-            signUpInfo.put("password", password);
+            JSONObject loginInfo = new JSONObject();
+            loginInfo.put("email", email_address);
+            loginInfo.put("password", input_password);
 
             HTTPAsyncTask jsonResponse ;
             (jsonResponse = new HTTPAsyncTask() {
@@ -125,8 +113,51 @@ public class SolarAccountManager implements Serializable {
                     System.out.println(result);
 
                     success[0] = true;
+
+                    // Set email & password if successfully sign up
+                    setEmail(email_address);
+                    setPassword(input_password);
+                    LOGIN_STATUS = true;
                 }
-            }).execute(this.URL(URIs.ACCOUNT_SIGN_UP), HTTPMethods.POST, signUpInfo.toString());
+            }).execute(URL(URIs.ACCOUNT_LOGIN), HTTPMethods.GET, loginInfo.toString());
+
+        } catch (JSONException jsonException) {
+            jsonException.printStackTrace();
+        }
+
+        return success[0];
+    }
+
+    /**
+     * Sign up account for the app
+     * @param email_address
+     * @param input_password
+     * @return
+     */
+    public boolean registerAccount(String email_address, String input_password) {
+
+        boolean[] success = {false};
+
+        try {
+
+            // Create JSON Object containing all information of the new user
+            JSONObject signUpInfo = new JSONObject();
+            signUpInfo.put("email", email_address);
+            signUpInfo.put("password", input_password);
+
+            HTTPAsyncTask jsonResponse ;
+            (jsonResponse = new HTTPAsyncTask() {
+                @Override
+                protected void onPostExecute(String result) {
+                    System.out.println(result);
+
+                    success[0] = true;
+
+                    // Set email & password if successfully sign up
+                    setEmail(email_address);
+                    setPassword(input_password);
+                }
+            }).execute(URL(URIs.ACCOUNT_SIGN_UP), HTTPMethods.POST, signUpInfo.toString());
 
         } catch (JSONException jsonException) {
             jsonException.printStackTrace();
@@ -150,7 +181,7 @@ public class SolarAccountManager implements Serializable {
      * @return
      */
     private void setEmail(String email_address) {
-        email = email_address;
+        account_email = email_address;
     }
 
     /**
@@ -159,10 +190,10 @@ public class SolarAccountManager implements Serializable {
      */
     public String getEmail() throws IllegalAccessException {
 
-        if (email == null) {
-            throw new IllegalAccessException("Error: Email address not defined");
+        if (account_email == null) {
+            throw new IllegalAccessException("Error: User's not logged in yet");
         }
-        return email;
+        return account_email;
     }
 
     /**
@@ -172,7 +203,18 @@ public class SolarAccountManager implements Serializable {
      * @return
      */
     private void setPassword(String password) {
-        this.password = password;
+        account_password = password;
+    }
+
+    /**
+     * Get account password
+     * @return password string
+     */
+    private String getPassword() throws IllegalAccessException {
+        if (account_password == null) {
+            throw new IllegalAccessException("Error: User's not logged in yet");
+        }
+        return account_password;
     }
 
     // Actions for saving or sharing the locations. This enumeration is used only in save location and share location methods
@@ -182,11 +224,17 @@ public class SolarAccountManager implements Serializable {
     }
 
     public boolean saveInterestedLocation(String locationName, double longitude, double latitude) {
-        return interestedLocationHelper(INTERESTED_LOCATION_ACTION.SAVE, locationName, longitude, latitude);
+        return interestedLocationHelper(INTERESTED_LOCATION_ACTION.SAVE,
+                locationName,
+                longitude,
+                latitude);
     }
 
     public boolean shareInterestedLocation(String locationName, double longitude, double latitude) {
-        return interestedLocationHelper(INTERESTED_LOCATION_ACTION.SHARE, locationName, longitude, latitude);
+        return interestedLocationHelper(INTERESTED_LOCATION_ACTION.SHARE,
+                locationName,
+                longitude,
+                latitude);
     }
 
     private boolean interestedLocationHelper(INTERESTED_LOCATION_ACTION action, String locationName, double longitude, double latitude) {
@@ -195,11 +243,11 @@ public class SolarAccountManager implements Serializable {
         JSONObject geoPoint = new JSONObject();
 
         try {
-            geoPoint.put("UUID", String.valueOf(UUID.randomUUID()));
-            geoPoint.put("userEmail", appAccountManager().getEmail());
-            geoPoint.put("name", locationName);
-            geoPoint.put("longitude", longitude);
-            geoPoint.put("latitude", latitude);
+            geoPoint.put("account_id", account_private_id);
+            geoPoint.put("location_id", String.valueOf(UUID.randomUUID()));
+            geoPoint.put("location_name", locationName);
+            geoPoint.put("location_longitude", longitude);
+            geoPoint.put("location_latitude", latitude);
 
             (new HTTPAsyncTask() {
                 @Override
@@ -208,12 +256,10 @@ public class SolarAccountManager implements Serializable {
 
                     success[0] = true;
                 }
-            }).execute(this.URL((action == INTERESTED_LOCATION_ACTION.SAVE) ? URIs.ACCOUNT_SAVE_LOCATION : URIs.ACCOUNT_SHARE_LOCATION), HTTPMethods.POST, geoPoint.toString());
+            }).execute(URL((action == INTERESTED_LOCATION_ACTION.SAVE) ? URIs.ACCOUNT_SAVE_LOCATION : URIs.ACCOUNT_SHARE_LOCATION), HTTPMethods.POST, geoPoint.toString());
 
         } catch (JSONException exception) {
             exception.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
         }
 
         // If successfully save/share location, add it to the local list
@@ -236,6 +282,6 @@ public class SolarAccountManager implements Serializable {
      * @return URL string
      */
     private String URL(String URI) {
-        return "http://" + IP_ADDRESS + ":" + CONNECTION_PORT + "/" + URI;
+        return "http://" + IP_ADDRESS + ":" + CONNECTION_PORT + URI;
     }
 }
