@@ -8,12 +8,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
-import umd.solarmap.HTTPAsyncTask;
+import umd.solarmap.RestAPI.HTTPAsyncTask;
+import umd.solarmap.RestAPI.HTTPMethods;
 import umd.solarmap.SolarData.SolarAchievement;
 import umd.solarmap.SolarData.SolarLocation;
 
 /**
- * Created by user on 11/15/16.
+ * Author: Nam Phung
  */
 
 public class SolarAccountManager implements Serializable {
@@ -32,14 +33,6 @@ public class SolarAccountManager implements Serializable {
         public static final String ACCOUNT_SHARE_LOCATION = "/addPublicLocation";
         public static final String ACCOUNT_LOAD_PRIVATE_LOCATION = "/getPrivateLocation";
         public static final String ACCOUNT_LOAD_PUBLIC_LOCATION = "/getPublicLocation";
-    }
-
-    // HTTP Methods
-    private class HTTPMethods {
-        public static final String GET = "GET";
-        public static final String POST = "POST";
-        public static final String PUT = "PUT";
-        public static final String DELETE = "DELETE";
     }
 
     // Server connection info
@@ -89,6 +82,11 @@ public class SolarAccountManager implements Serializable {
      * ACCOUNT CONNECTION METHODS *
      ******************************/
 
+    private enum ACCOUNT_ACTION {
+        REGISTER,
+        LOG_IN
+    }
+
     /**
      * Login to the app
      * @param email_address
@@ -96,36 +94,7 @@ public class SolarAccountManager implements Serializable {
      * @return
      */
     public boolean login(String email_address, String input_password) {
-
-        boolean[] success = {false};
-
-        try {
-
-            // Create JSON Object containing all information of the new user
-            JSONObject loginInfo = new JSONObject();
-            loginInfo.put("email", email_address);
-            loginInfo.put("password", input_password);
-
-            HTTPAsyncTask jsonResponse ;
-            (jsonResponse = new HTTPAsyncTask() {
-                @Override
-                protected void onPostExecute(String result) {
-                    System.out.println(result);
-
-                    success[0] = true;
-
-                    // Set email & password if successfully sign up
-                    setEmail(email_address);
-                    setPassword(input_password);
-                    LOGIN_STATUS = true;
-                }
-            }).execute(URL(URIs.ACCOUNT_LOGIN), HTTPMethods.GET, loginInfo.toString());
-
-        } catch (JSONException jsonException) {
-            jsonException.printStackTrace();
-        }
-
-        return success[0];
+        return loginSignUpHelper(ACCOUNT_ACTION.LOG_IN, email_address, input_password);
     }
 
     /**
@@ -135,29 +104,37 @@ public class SolarAccountManager implements Serializable {
      * @return
      */
     public boolean registerAccount(String email_address, String input_password) {
+        return loginSignUpHelper(ACCOUNT_ACTION.REGISTER, email_address, input_password);
+    }
 
+    private boolean loginSignUpHelper(ACCOUNT_ACTION action, String email_address, String input_password) {
         boolean[] success = {false};
 
         try {
-
             // Create JSON Object containing all information of the new user
-            JSONObject signUpInfo = new JSONObject();
-            signUpInfo.put("email", email_address);
-            signUpInfo.put("password", input_password);
+            JSONObject jsonData = new JSONObject();
+            jsonData.put("email", email_address);
+            jsonData.put("password", input_password);
 
-            HTTPAsyncTask jsonResponse ;
-            (jsonResponse = new HTTPAsyncTask() {
+            (new HTTPAsyncTask() {
                 @Override
                 protected void onPostExecute(String result) {
-                    System.out.println(result);
 
-                    success[0] = true;
+                    // if successfully sign up, the client will receive the private user ID
+                    if (!result.equals("")) {
+                        account_private_id = result;
 
-                    // Set email & password if successfully sign up
-                    setEmail(email_address);
-                    setPassword(input_password);
+                        // Set email & password if successfully sign up
+                        setEmail(email_address);
+                        setPassword(input_password);
+                        success[0] = true;
+
+                        LOGIN_STATUS = (action == ACCOUNT_ACTION.LOG_IN) ? true : false;
+                    }
                 }
-            }).execute(URL(URIs.ACCOUNT_SIGN_UP), HTTPMethods.POST, signUpInfo.toString());
+            }).execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? URIs.ACCOUNT_LOGIN : URIs.ACCOUNT_SIGN_UP),
+                    (action == ACCOUNT_ACTION.LOG_IN) ? HTTPMethods.GET : HTTPMethods.POST,
+                    jsonData.toString());
 
         } catch (JSONException jsonException) {
             jsonException.printStackTrace();
@@ -166,7 +143,7 @@ public class SolarAccountManager implements Serializable {
         return success[0];
     }
 
-    public void signout() {
+    public void signOut() {
         LOGIN_STATUS = false;
     }
 

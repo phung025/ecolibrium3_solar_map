@@ -1,4 +1,4 @@
-package umd.solarmap;
+package umd.solarmap.RestAPI;
 
 import android.os.AsyncTask;
 import android.util.Log;
