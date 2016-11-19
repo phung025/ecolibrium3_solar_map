@@ -38,7 +38,7 @@ public class SolarAccountManager implements Serializable {
 
     // Server connection info
     private static final int CONNECTION_PORT = 4321;
-    private static final String IP_ADDRESS = "131.212.213.235";
+    private static final String IP_ADDRESS = "10.0.2.2";
     //10.0.2.2
     // Account login status
     public static boolean LOGIN_STATUS = false;

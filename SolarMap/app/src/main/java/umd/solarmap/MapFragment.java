@@ -21,6 +21,7 @@ import com.esri.arcgisruntime.concurrent.ListenableFuture;
 import com.esri.arcgisruntime.datasource.Feature;
 import com.esri.arcgisruntime.datasource.FeatureQueryResult;
 import com.esri.arcgisruntime.datasource.QueryParameters;
+import com.esri.arcgisruntime.datasource.arcgis.ServiceFeatureTable;
 import com.esri.arcgisruntime.geometry.Envelope;
 import com.esri.arcgisruntime.geometry.GeometryEngine;
 import com.esri.arcgisruntime.geometry.Point;
@@ -53,6 +54,7 @@ import java.util.concurrent.ExecutionException;
 
 import umd.solarmap.AccountManager.SolarAccountManager;
 import umd.solarmap.R;
+import umd.solarmap.RestAPI.HTTPAsyncTask;
 
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
@@ -185,11 +187,9 @@ public class MapFragment extends Fragment {
                     final double longitude = markerPoint.getX();
                     final double latitude = markerPoint.getY();
 
-                    if (which == 0) {
-                        System.out.println("You chose to share location");
+                    if (which == 0) { // Share location publicly
                         SolarAccountManager.appAccountManager().shareInterestedLocation("location name", longitude, latitude);
-                    } else {
-                        System.out.println("You chose to save location");
+                    } else { // Save location privately
                         SolarAccountManager.appAccountManager().saveInterestedLocation("location name", longitude, latitude);
                     }
                 });
@@ -233,31 +233,27 @@ public class MapFragment extends Fragment {
                             calloutContent.setMovementMethod(new ScrollingMovementMethod());
                             calloutContent.setLines(5);
 
-                            int counter = 0;
-                            Feature feature;
-                            while (iterator.hasNext()){
-                                feature = iterator.next();
+                            while (iterator.hasNext()) {
+                                Feature feature = iterator.next();
                                 // create a Map of all available attributes as name value pairs
                                 Map<String, Object> attr = feature.getAttributes();
-                                Set<String> keys = attr.keySet();
-                                for(String key:keys){
-                                    Object value = attr.get(key);
-                                    // format observed field value as date
-                                    if(value instanceof GregorianCalendar){
-                                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MMM-yyyy", Locale.US);
-                                        value = simpleDateFormat.format(((GregorianCalendar) value).getTime());
+
+                                (new HTTPAsyncTask() {
+                                    @Override
+                                    protected void onPostExecute(String result) {
+                                        // append name value pairs to TextView
+                                        calloutContent.append(result);
+                                        //calloutContent.append(feature.getInternal().k().x().toString());
+
+                                        // center the mapview on selected feature
+                                        Envelope envelope = feature.getGeometry().getExtent();
+                                        mainMapView.setViewpointGeometryWithPaddingAsync(envelope, 200);
+                                        // callout display
+                                        mCallout.setLocation(clickPoint);
+                                        mCallout.setContent(calloutContent);
+                                        mCallout.show();
                                     }
-                                    // append name value pairs to TextView
-                                    calloutContent.append(key + " | " + value + "\n");
-                                }
-                                counter++;
-                                // center the mapview on selected feature
-                                Envelope envelope = feature.getGeometry().getExtent();
-                                mainMapView.setViewpointGeometryWithPaddingAsync(envelope, 200);
-                                // callout display
-                                mCallout.setLocation(clickPoint);
-                                mCallout.setContent(calloutContent);
-                                mCallout.show();
+                                }).execute("http://services.arcgis.com/8df8p0NlLFEShl0r/ArcGIS/rest/services/foot_dlh_5k/FeatureServer/0/query?where=&objectIds=" + attr.get("OBJECTID") + "&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=standard&distance=&units=esriSRUnit_Meter&outFields=OBJECTID%2CBldg_Name%2CBldg_ID%2C+Parcel%2C+BuildingType%2C+created_user%2Ccreated_date%2Clast_edited_user%2Clast_edited_date%2CBuildingNumber+%2Cfidnum+%2COBJECTID_1+%2COBJECTID_12+%2CVALUE_0+%2CVALUE_1+%2CVALUE_2+%2COBJECTID_12_13+%2COBJECTID_12_13_14+%2CVALUE_01+%2CVALUE_12+%2Csol_700k+%2Csol_1000k+%2Cflat+%2Cflat_pct+&returnGeometry=false&returnCentroid=false&multipatchOption=&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnDistinctValues=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&quantizationParameters=&sqlFormat=standard&f=pjson&token=", "GET");
                             }
                         } catch (Exception e) {
                             Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
@@ -266,7 +262,6 @@ public class MapFragment extends Fragment {
                 });
                 return super.onSingleTapConfirmed(e);
             }
-
         }
         mainMapView.setOnTouchListener(new CustomMapViewTouchListener(getContext(), mainMapView));
     }
