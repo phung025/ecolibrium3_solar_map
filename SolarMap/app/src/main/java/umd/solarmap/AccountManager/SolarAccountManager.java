@@ -7,10 +7,10 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import umd.solarmap.RestAPI.HTTPAsyncTask;
 import umd.solarmap.RestAPI.HTTPMethods;
-import umd.solarmap.RestAPI.HTTPNonAsyncTask;
 import umd.solarmap.SolarData.SolarAchievement;
 import umd.solarmap.SolarData.SolarLocation;
 
@@ -28,12 +28,12 @@ public class SolarAccountManager implements Serializable {
 
     // URI Links
     private class URIs {
-        public static final String ACCOUNT_LOGIN = "/login";
-        public static final String ACCOUNT_SIGN_UP = "/registerAccount";
-        public static final String ACCOUNT_SAVE_LOCATION = "/addPrivateLocation";
-        public static final String ACCOUNT_SHARE_LOCATION = "/addPublicLocation";
-        public static final String ACCOUNT_LOAD_PRIVATE_LOCATION = "/getPrivateLocation";
-        public static final String ACCOUNT_LOAD_PUBLIC_LOCATION = "/getPublicLocation";
+        public static final String ACCOUNT_LOGIN = "/API/loginAccount";
+        public static final String ACCOUNT_SIGN_UP = "/API/registerAccount";
+        public static final String ACCOUNT_SAVE_LOCATION = "/API/addPrivateLocation";
+        public static final String ACCOUNT_SHARE_LOCATION = "/API/addPublicLocation";
+        public static final String ACCOUNT_LOAD_PRIVATE_LOCATION = "/API/getPrivateLocation";
+        public static final String ACCOUNT_LOAD_PUBLIC_LOCATION = "/API/getPublicLocation";
     }
 
     // Server connection info
@@ -112,24 +112,30 @@ public class SolarAccountManager implements Serializable {
     }
 
     /**
-     *
      * @param action
      * @param email_address
      * @param input_password
      * @return
      */
     private boolean loginSignUpHelper(ACCOUNT_ACTION action, String email_address, String input_password) {
-        boolean success = false;
+        boolean[] success = {false};
 
+        JSONObject jsonData = new JSONObject();
         try {
-            JSONObject jsonData = new JSONObject();
             // Create JSON Object containing all information of the new user
             jsonData.put("email", email_address);
             jsonData.put("password", input_password);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
-//            String result = new HTTPNonAsyncTask().execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? URIs.ACCOUNT_LOGIN : URIs.ACCOUNT_SIGN_UP),
-  //                  HTTPMethods.POST,
-    //                jsonData.toString());
+        try {
+            String result = (new HTTPAsyncTask() {
+                @Override
+                protected void onPostExecute(String result) {}
+            }).execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? URIs.ACCOUNT_LOGIN : URIs.ACCOUNT_SIGN_UP),
+                    HTTPMethods.POST,
+                    jsonData.toString()).get();
 
             JSONObject jsonResponse = new JSONObject(result);
             String accountID = String.valueOf(jsonResponse.get("account_id"));
@@ -142,15 +148,18 @@ public class SolarAccountManager implements Serializable {
                 setEmail(email_address);
                 setPassword(input_password);
 
-                success = true;
+                success[0] = true;
                 LOGIN_STATUS = (action == ACCOUNT_ACTION.LOG_IN) ? true : false;
             }
-
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
-        return success;
+        return success[0];
     }
 
     public void signOut() {
@@ -206,6 +215,25 @@ public class SolarAccountManager implements Serializable {
             throw new IllegalAccessException("Error: User's not logged in yet");
         }
         return account_password;
+    }
+
+    /**
+     *
+     * @param id
+     */
+    private void setAccountPrivateID(String id) {
+        account_private_id = id;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private String getAccountPrivateID() throws IllegalAccessException {
+        if (account_private_id == null) {
+            throw new IllegalAccessException("Error: User's not logged in yet");
+        }
+        return account_private_id;
     }
 
     // Actions for saving or sharing the locations. This enumeration is used only in save location and share location methods
