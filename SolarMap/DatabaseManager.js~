@@ -52,7 +52,7 @@ module.exports = function DatabaseManager() {
 
   var ACCOUNT_ACTIONS = {
     REGISTER : 0,
-    LOG_IN : 1
+    LOG_IN : 0
   };
 
   /**
