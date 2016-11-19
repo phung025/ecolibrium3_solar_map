@@ -1,0 +1,22 @@
+{
+  "name": "ecolibrium3_solar_server",
+  "version": "1.0.0",
+  "description": "Node Server for Ecolibrium3 Solar Map App",
+  "main": "index.js",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "Server",
+    "Node",
+    "Solar",
+    "Map"
+  ],
+  "author": "Nam Phung, Dale Dowling",
+  "license": "MIT"
+}
