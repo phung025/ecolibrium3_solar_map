@@ -128,7 +128,7 @@ app.get('/API/getPublicLocation', function(req, res) {
 
 //initial post of username and other info
 app.post(URI_SIGN_UP, function (req, res) {
-
+/*
     // If for some reason, the JSON isn't parsed, return a HTTP ERROR
     // 400
     if (!req.body) return res.sendStatus(400);
@@ -181,6 +181,19 @@ app.post(URI_SIGN_UP, function (req, res) {
 
     // Respond with the stringified JSON data
     res.send(JSON.stringify(jsonResponse));
+*/
+
+    databaseManager.registerAccount(req.body.email, req.body.password, function(isSuccess, authorizationCode) {
+      if (isSuccess) {
+        res.status(200);
+        console.log('/registerAccount POST accessed and approved');
+      } else {
+        res.status(409);
+        console.log('/registerAccount POST accessed but rejected');
+      }
+
+      res.send(JSON.stringify({account_id: authorizationCode}));
+    });
 });
 
 app.post(URI_LOGIN, function(req, res) {
