@@ -1,5 +1,13 @@
 const SERVER_PORT = 4321;
+
+// MongoDB
 const DATABASE_URL = "mongodb://localhost:27017/ecolibrium_solarDB";
+
+const COLLECTIONS = {
+  COLLECTION_USER_ACCOUNT_DATABASE: "USER_ACCOUNT_DATABASE",
+  COLLECTION_PUBLIC_LOCATIONS: "PUBLIC_LOCATIONS"
+}
+
 
 // All URIs
 const URI_LOGIN = "/API/loginAccount";
@@ -14,7 +22,23 @@ var MongoClient = require('mongodb').MongoClient;
 // Connect to the db
 MongoClient.connect(DATABASE_URL, function(err, db) {
   if(!err) {
-    console.log("We're connected to MongoDB");
+
+    console.log("\n============================================================\n");
+
+    console.log("We're connected to MongoDB\n");
+
+    // Set up collection containing user account
+    console.log("Creating collection " + COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE + "...");
+    db.createCollection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE, function(err, collection) {});
+
+    // Set up collection containing all public solar locations in Duluth
+    console.log("Creating collection " + COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS + "...");
+    db.createCollection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS, function(err, collection) {});
+
+    console.log("\nFinished setting up database");
+
+    console.log("\n============================================================\n");
+
   } else {
   	console.log("Error occured while trying to connect to MongoDB")
   }
@@ -142,63 +166,50 @@ app.post(URI_SIGN_UP, function (req, res) {
     // 400
     if (!req.body) return res.sendStatus(400);
 
-    //gather data from req
-    var email_address = req.body.email;
-    var myPassword = req.body.password;
-
     //find out if the account already exists
-    var accountExists = false;
-    for (var i = 0; i < accounts.account_list.length; ++i) {
-
-	var cur_account = accounts.account_list[i];
-
-        if (cur_account.email === email_address) {
-	    accountExists = true;
-	    break;
-        }
-    }
+    var accountExists = isAccountAvailable(jsonData = {
+      email_address: req.body.email,
+      password: req.body.password
+    });
 
     var jsonResponse = {
+      account_id: ""
     };
 
     // Check whether email address is already in the database or not
     if (!accountExists) {
 
-	var achievements_list = {
-	    //some Example Achievements
-            Have20Friends : false,
-            Saved10Locations : false
-	};
+      var achievements_list = {
+        //some Example Achievements
+        Have20Friends : false,
+        Saved10Locations : false
+      };
 
-	var saved_locations_list = [];
+      var saved_locations_list = [];
 
-	var jsonAccount = {
-            email: email_address,
-            password: myPassword,
-            achievements: achievements_list,
-            savedLocation: saved_locations_list,
-	    userID: guid()
-	};
+      var jsonAccount = {
+        email: req.body.email,
+        password: req.body.password,
+        achievements: achievements_list,
+        savedLocation: saved_locations_list,
+        userID: guid()
+      };
 
-	// Respond with the account private ID
-	jsonResponse = {
-	    account_id: jsonAccount.userID
-	};
+      // Respond with the account private ID
+      jsonResponse = {
+        account_id: jsonAccount.userID
+      };
 
-	// Add the account to the account list
-	accounts.account_list.push(jsonAccount);
-	res.status(200);
+      // Add the account to the account list
+      accounts.account_list.push(jsonAccount);
 
-	console.log('/registerAccount POST accessed and approved');
+      res.status(200);
+      console.log('/registerAccount POST accessed and approved');
+
     } else {
 
-	// Respond with the empty string in account private ID
-	jsonResponse = {
-	    account_id: ""
-	};
-	res.status(409);
-
-	console.log('/registerAccount POST accessed but rejected');
+      res.status(409);
+      console.log('/registerAccount POST accessed but rejected');
     }
 
     // Respond with the stringified JSON data
@@ -380,31 +391,41 @@ app.use(function(err, req, res, next) {
   res.status(500).send('Internal Server Error message - very strange request came in and we do not know how to handle it!!!');
 });
 
-// ================================================
-// ================================================
-// ================================================
-//
-// FINALLY, start the app and let it listen for connections on the
-// network
-//
-// This really needs to be last.
-//
-// app.listen opens up a network socket on port "port" and waits for
-// HTTP connections
-//
-// ================================================
-// ================================================
-// ================================================
+app.listen(app.get("port"), function () {
+    console.log('Ecolibrium3 Solar Map Android App, listening on port:', app.get("port"));
+});
 
+////////////////////////////
+// UTILITIES
+////////////////////////////
+
+function isAccountAvailable(search_data) {
+
+  var accountExists = false;
+
+  for (var i = 0; i < accounts.account_list.length; ++i) {
+    var cur_account = accounts.account_list[i];
+
+    if ((cur_account.email === search_data.email_address) &&
+      (cur_account.password === search_data.password)) {
+        // Found the account & respond with authorization uuid
+        accountExists = true;
+        break;
+      }
+    }
+
+    return accountExists;
+  }
 
 function guid() {
+
   function s4() {
     return Math.floor((1 + Math.random()) * 0x10000)
       .toString(16)
       .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
+    }
+
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 
 function getAccountData(UID, dataType){
@@ -441,7 +462,3 @@ function getAccountData(UID, dataType){
 
 
 }
-
-app.listen(app.get("port"), function () {
-    console.log('Ecolibrium3 Solar Map Android App, listening on port:', app.get("port"));
-});
