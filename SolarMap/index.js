@@ -1,9 +1,26 @@
 const SERVER_PORT = 4321;
+const DATABASE_URL = "mongodb://localhost:27017/ecolibrium_solarDB";
 
 // All URIs
 const URI_LOGIN = "/API/loginAccount";
 const URI_SIGN_UP = "/API/registerAccount";
+const URI_GET_ACHIEVEMENTS = "/API/getAchievements";
 
+///////////////////
+// Database
+///////////////////
+var MongoClient = require('mongodb').MongoClient;
+
+// Connect to the db
+MongoClient.connect(DATABASE_URL, function(err, db) {
+  if(!err) {
+    console.log("We're connected to MongoDB");
+  }
+});
+
+/////////////////////////
+// Node Server
+/////////////////////////
 var express = require('express');
 var bodyParser = require('body-parser');
 
@@ -14,7 +31,7 @@ var app = express();
 app.set("port", SERVER_PORT);
 
 accounts = {
-  account_list:[ ]
+  account_list:[]
 };
 
 publicLocations = [];
@@ -300,38 +317,6 @@ app.post('/API/addPublicLocation', function (req, res) {
     res.json(req.body);
 });
 
-/* Not Sure if using put yet; will comment out code until we know
-// ----------------------------------------
-// PUT
-// ----------------------------------------
-var countUserDataPUT = 0
-app.put('/registerAccount', function (req, res) {
-
-    // If for some reason, the JSON isn't parsed, return a HTTP ERROR
-    // 400
-    if (!req.body) return res.sendStatus(400)
-
-    countUserDataPUT++;
-
-    var name = req.body.name;
-    var descr = req.body.description;
-    var enable = req.body.enable;
-    var val1 = req.body.val1;
-
-    console.log(req.accepts('json'));
-    console.log(req.get('Content-Type'));
-
-    console.log('/registerAccount PUT, count=', countUserDataPUT, ', jsonData=', req.body);
-    console.log('   name=', name, ', description=', descr, ', enable=', enable, ', val1=', val1);
-
-    var jsonResponse = {
-	id: '123',
-	status: 'updated'
-    };
-    res.json(jsonResponse);
-})
-*/
-
 // ----------------------------------------
 // DELETE
 // ----------------------------------------
@@ -456,5 +441,5 @@ function getAccountData(UID, dataType){
 }
 
 app.listen(app.get("port"), function () {
-    console.log('Ecolibrium3 Solar Map Android App, listening on port: ', app.get("port"));
+    console.log('Ecolibrium3 Solar Map Android App, listening on port:', app.get("port"));
 });
