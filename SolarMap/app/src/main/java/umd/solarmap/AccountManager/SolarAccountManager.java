@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import umd.solarmap.RestAPI.HTTPAsyncTask;
 import umd.solarmap.RestAPI.HTTPMethods;
+import umd.solarmap.RestAPI.HTTPNonAsyncTask;
 import umd.solarmap.SolarData.SolarAchievement;
 import umd.solarmap.SolarData.SolarLocation;
 
@@ -36,9 +37,9 @@ public class SolarAccountManager implements Serializable {
     }
 
     // Server connection info
-    private static int CONNECTION_PORT = 4321;
-    private static String IP_ADDRESS = "10.0.2.2";
-
+    private static final int CONNECTION_PORT = 4321;
+    private static final String IP_ADDRESS = "131.212.213.235";
+    //10.0.2.2
     // Account login status
     public static boolean LOGIN_STATUS = false;
 
@@ -69,6 +70,7 @@ public class SolarAccountManager implements Serializable {
      * Get instance of SolarAccountManager. This is the account manager associated with the app.
      * We can only get the account manager from this static method since the default constructor
      * is set to be private
+     *
      * @return the account manager of the app
      */
     public static SolarAccountManager appAccountManager() {
@@ -89,6 +91,7 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Login to the app
+     *
      * @param email_address
      * @param input_password
      * @return
@@ -99,6 +102,7 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Sign up account for the app
+     *
      * @param email_address
      * @param input_password
      * @return
@@ -107,40 +111,46 @@ public class SolarAccountManager implements Serializable {
         return loginSignUpHelper(ACCOUNT_ACTION.REGISTER, email_address, input_password);
     }
 
+    /**
+     *
+     * @param action
+     * @param email_address
+     * @param input_password
+     * @return
+     */
     private boolean loginSignUpHelper(ACCOUNT_ACTION action, String email_address, String input_password) {
-        boolean[] success = {false};
+        boolean success = false;
 
         try {
-            // Create JSON Object containing all information of the new user
             JSONObject jsonData = new JSONObject();
+            // Create JSON Object containing all information of the new user
             jsonData.put("email", email_address);
             jsonData.put("password", input_password);
 
-            (new HTTPAsyncTask() {
-                @Override
-                protected void onPostExecute(String result) {
+//            String result = new HTTPNonAsyncTask().execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? URIs.ACCOUNT_LOGIN : URIs.ACCOUNT_SIGN_UP),
+  //                  HTTPMethods.POST,
+    //                jsonData.toString());
 
-                    // if successfully sign up, the client will receive the private user ID
-                    if (!result.equals("")) {
-                        account_private_id = result;
+            JSONObject jsonResponse = new JSONObject(result);
+            String accountID = String.valueOf(jsonResponse.get("account_id"));
 
-                        // Set email & password if successfully sign up
-                        setEmail(email_address);
-                        setPassword(input_password);
-                        success[0] = true;
+            // if successfully sign up, the client will receive the private user ID
+            if (!accountID.equals("")) {
+                account_private_id = result;
 
-                        LOGIN_STATUS = (action == ACCOUNT_ACTION.LOG_IN) ? true : false;
-                    }
-                }
-            }).execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? URIs.ACCOUNT_LOGIN : URIs.ACCOUNT_SIGN_UP),
-                    (action == ACCOUNT_ACTION.LOG_IN) ? HTTPMethods.GET : HTTPMethods.POST,
-                    jsonData.toString());
+                // Set email & password if successfully sign up
+                setEmail(email_address);
+                setPassword(input_password);
 
-        } catch (JSONException jsonException) {
-            jsonException.printStackTrace();
+                success = true;
+                LOGIN_STATUS = (action == ACCOUNT_ACTION.LOG_IN) ? true : false;
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
-        return success[0];
+        return success;
     }
 
     public void signOut() {
@@ -154,6 +164,7 @@ public class SolarAccountManager implements Serializable {
     /**
      * Set the email of the app's account. This function should only be called when the user successfully
      * sign up or login the app
+     *
      * @param email_address
      * @return
      */
@@ -163,6 +174,7 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Get email address of the user
+     *
      * @return email address string
      */
     public String getEmail() throws IllegalAccessException {
@@ -176,6 +188,7 @@ public class SolarAccountManager implements Serializable {
     /**
      * Set the password of the app's account. This function should only be called when the user successfully
      * sign up or login the app
+     *
      * @param password
      * @return
      */
@@ -185,6 +198,7 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Get account password
+     *
      * @return password string
      */
     private String getPassword() throws IllegalAccessException {
@@ -255,6 +269,7 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Get the URL to connect to server
+     *
      * @param URI
      * @return URL string
      */

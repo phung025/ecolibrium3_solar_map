@@ -1,6 +1,5 @@
 package umd.solarmap.RestAPI;
 
-import android.os.AsyncTask;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -17,15 +16,11 @@ import java.net.URL;
 import java.util.Arrays;
 
 /**
- * Created by Nam Phung on 11/13/2016.
+ * Created by phung025 on 11/18/16.
  */
+public class HTTPNonAsyncTask {
 
-public abstract class HTTPAsyncTask extends AsyncTask<String, Integer, String> {
-
-    @Override
-    protected String doInBackground(String... params) {
-
-        System.out.println("PARAMS:" + Arrays.toString(params));
+    public String execute(String... params) {
 
         HttpURLConnection serverConnection = null;
         InputStream is = null;
@@ -87,10 +82,4 @@ public abstract class HTTPAsyncTask extends AsyncTask<String, Integer, String> {
 
         return "Should not get to this if the data has been sent/received correctly!";
     }
-
-    /**
-     *
-     * @param result the result from the query
-     */
-    protected abstract void onPostExecute(String result);
 }

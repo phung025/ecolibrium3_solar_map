@@ -9,6 +9,8 @@ import android.widget.EditText;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import umd.solarmap.AccountManager.SolarAccountManager;
+
 
 /**
  * A login screen that offers login via email/password.
@@ -34,7 +36,16 @@ public class StartupLoginActivity extends AppCompatActivity {
     }
 
     public void onTouchSignInButton(View view) {
-        finish();
+
+        // Both text fields must not be empty
+        String email_address = mEmailView.getText().toString();
+        String password = mPasswordView.getText().toString();
+
+        if(SolarAccountManager.appAccountManager().login(email_address, password)) {
+            finish();
+        } else {
+
+        }
     }
 
     public void onTouchSignUpButton(View view) {
@@ -42,6 +53,8 @@ public class StartupLoginActivity extends AppCompatActivity {
         // Both text fields must not be empty
         String email_address = mEmailView.getText().toString();
         String password = mPasswordView.getText().toString();
+
+        SolarAccountManager.appAccountManager().registerAccount(email_address, password);
     }
 }
 
