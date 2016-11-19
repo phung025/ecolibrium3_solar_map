@@ -11,9 +11,9 @@
 module.exports = function DatabaseManager() {
 
   // MongoDB
-  const MongoClient = require('mongodb').MongoClient;
-  const DATABASE_URL = "mongodb://localhost:27017/ecolibrium_solarDB";
-  const COLLECTIONS = {
+  var MongoClient = require('mongodb').MongoClient;
+  var DATABASE_URL = "mongodb://localhost:27017/ecolibrium_solarDB";
+  var COLLECTIONS = {
     COLLECTION_USER_ACCOUNT_DATABASE: "USER_ACCOUNT_DATABASE",
     COLLECTION_PUBLIC_LOCATIONS: "PUBLIC_LOCATIONS"
   };
@@ -50,13 +50,27 @@ module.exports = function DatabaseManager() {
     });
   };
 
+  var ACCOUNT_ACTIONS = {
+    REGISTER : 0,
+    LOG_IN : 0
+  };
+
   /**
-   *
-   *
+   * Register an account using email address
+   * @param email_address String email address
+   * @param password String account password
+   * @param isSuccessFn callback function to notify once the registering process is finished
    */
   this.registerAccount = function(email_address, password, isSuccessFn) {
-    MongoClient.connect(DATABASE_URL, function(err, db) {
+    registerAndLoginHelper(ACCOUNT_ACTIONS.REGISTER, email_address, password, isSuccessFn);
+  };
 
+  this.signInAccount = function(email_address, password, isSuccessFn) {
+    registerAndLoginHelper(ACCOUNT_ACTIONS.LOG_IN, email_address, password, isSuccessFn);
+  }
+
+  function registerAndLoginHelper(action, email_address, password, isSuccessFn) {
+    MongoClient.connect(DATABASE_URL, function(err, db) {
       // Get the collection we're going to search
       var search_collection = db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE);
 
@@ -67,22 +81,52 @@ module.exports = function DatabaseManager() {
 
         if (!isAccountExisted) { // Account is not existed, create new account
 
-          var new_account = {
-            account_private_ID: guid(),
-            account_email_address: email_address,
-            account_password: password
-          };
+          switch (action) {
+            case ACCOUNT_ACTIONS.REGISTER: {
 
-          // Insert new account to the collection
-          search_collection.insertOne(new_account);
-          isSuccessFn(true, new_account.account_private_ID);
+              var new_account = {
+                account_private_ID: guid(),
+                account_email_address: email_address,
+                account_password: password
+              };
+
+              // Insert new account to the collection
+              search_collection.insertOne(new_account);
+              isSuccessFn(true, new_account.account_private_ID);
+              break;
+            }
+
+            case ACCOUNT_ACTIONS.LOG_IN: {
+              isSuccessFn(false, "");
+              break;
+            }
+
+            default: {
+              break;
+            }
+          }
 
         } else { // Account is already existed
-          isSuccessFn(false, "");
+
+          switch (action) {
+            case ACCOUNT_ACTIONS.REGISTER: {
+              isSuccessFn(false, "");
+              break;
+            }
+
+            case ACCOUNT_ACTIONS.LOG_IN: {
+              isSuccessFn(true, doc.account_private_ID);
+              break;
+            }
+
+            default: {
+              break;
+            }
+          }
         }
       });
     });
-  };
+  }
 
   /////////////////////////////////
   // UTILITIES
