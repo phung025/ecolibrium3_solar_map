@@ -1,10 +1,11 @@
 const SERVER_PORT = 4321;
 
 // All URIs
-const URI_LOGIN = "/API/loginAccount";
-const URI_SIGN_UP = "/API/registerAccount";
-const URI_GET_ACHIEVEMENTS = "/API/getAchievements";
-
+var URIs = {
+  URI_LOGIN: "/API/loginAccount",
+  URI_SIGN_UP: "/API/registerAccount",
+  URI_GET_ACHIEVEMENTS: "/API/getAchievements"
+};
 ///////////////////
 // Database
 ///////////////////
@@ -127,116 +128,42 @@ app.get('/API/getPublicLocation', function(req, res) {
 // ----------------------------------------
 
 //initial post of username and other info
-app.post(URI_SIGN_UP, function (req, res) {
-/*
+app.post(URIs.URI_SIGN_UP, function (req, res) {
+
     // If for some reason, the JSON isn't parsed, return a HTTP ERROR
     // 400
     if (!req.body) return res.sendStatus(400);
 
-    //find out if the account already exists
-    var accountExists = isAccountAvailable(jsonData = {
-      email_address: req.body.email,
-      password: req.body.password
-    });
-
-    var jsonResponse = {
-      account_id: ""
-    };
-
-    // Check whether email address is already in the database or not
-    if (!accountExists) {
-
-      var achievements_list = {
-        //some Example Achievements
-        Have20Friends : false,
-        Saved10Locations : false
-      };
-
-      var saved_locations_list = [];
-
-      var jsonAccount = {
-        email: req.body.email,
-        password: req.body.password,
-        achievements: achievements_list,
-        savedLocation: saved_locations_list,
-        userID: guid()
-      };
-
-      // Respond with the account private ID
-      jsonResponse = {
-        account_id: jsonAccount.userID
-      };
-
-      // Add the account to the account list
-      accounts.account_list.push(jsonAccount);
-
-      res.status(200);
-      console.log('/registerAccount POST accessed and approved');
-
-    } else {
-
-      res.status(409);
-      console.log('/registerAccount POST accessed but rejected');
-    }
-
-    // Respond with the stringified JSON data
-    res.send(JSON.stringify(jsonResponse));
-*/
-
-    databaseManager.registerAccount(req.body.email, req.body.password, function(isSuccess, authorizationCode) {
+    databaseManager.registerAccount(req.body.email, req.body.password, function(isSuccess) {
       if (isSuccess) {
         res.status(200);
-        console.log('/registerAccount POST accessed and approved');
+        console.log('/API/registerAccount POST accessed and approved');
       } else {
         res.status(409);
-        console.log('/registerAccount POST accessed but rejected');
+        console.log('/API/registerAccount POST accessed but rejected');
+      }
+
+      res.send(JSON.stringify({is_registered: isSuccess}));
+    });
+});
+
+app.post(URIs.URI_LOGIN, function(req, res) {
+
+    // If for some reason, the JSON isn't parsed, return a HTTP ERROR
+    // 400
+    if (!req.body) return res.sendStatus(400);
+
+    databaseManager.loginAccount(req.body.email, req.body.password, function(isSuccess, authorizationCode) {
+      if (isSuccess) {
+        res.status(200);
+        console.log('/API/loginAccount POST accessed and approved');
+      } else {
+        res.status(404);
+        console.log('/API/loginAccount POST accessed but rejected');
       }
 
       res.send(JSON.stringify({account_id: authorizationCode}));
     });
-});
-
-app.post(URI_LOGIN, function(req, res) {
-
-    // If for some reason, the JSON isn't parsed, return a HTTP ERROR
-    // 400
-    if (!req.body) return res.sendStatus(400);
-
-    console.log(JSON.stringify(req.body));
-
-    //gather data from req
-    var email_address = req.body.email;
-    var password = req.body.password;
-    var accountID = ""; // If the account is not found, this id should always be empty string
-
-    accountExists = false;
-
-    for (var i = 0; i < accounts.account_list.length; ++i) {
-
-	var cur_account = accounts.account_list[i];
-
-	if ((cur_account.email === email_address) &&
-	    (cur_account.password === password)) {
-
-	    // Found the account & respond with authorization uuid
-	    accountExists = true;
-	    accountID = cur_account.userID;
-	    break;
-        }
-    }
-
-    var jsonResponse = {
-	account_id: accountID
-    };
-
-    // Respond to client with approriate json data
-    if (accountExists) {
-	res.status(200).send(JSON.stringify(jsonResponse));
-	console.log('/login GET accesed from ' + email_address + ' approved');
-    } else {
-	res.status(404).send(JSON.stringify(jsonResponse));
-	console.log('/login GET accessed from ' + email_address + ' rejected');
-    }
 });
 
 app.post('/API/setAchievements', function (req, res) {
@@ -378,35 +305,6 @@ app.listen(app.get("port"), function () {
 ////////////////////////////
 // UTILITIES
 ////////////////////////////
-
-function isAccountAvailable(search_data) {
-
-  var accountExists = false;
-
-  for (var i = 0; i < accounts.account_list.length; ++i) {
-    var cur_account = accounts.account_list[i];
-
-    if ((cur_account.email === search_data.email_address) &&
-      (cur_account.password === search_data.password)) {
-        // Found the account & respond with authorization uuid
-        accountExists = true;
-        break;
-      }
-    }
-
-    return accountExists;
-  }
-
-function guid() {
-
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-    }
-
-    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-}
 
 function getAccountData(UID, dataType){
 	returnData = null;

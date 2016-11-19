@@ -44,19 +44,16 @@ module.exports = function DatabaseManager() {
       } else {
       	console.log("Error occured while trying to connect to MongoDB")
       }
-
-      // Close the database
-      db.close();
     });
   };
 
   var ACCOUNT_ACTIONS = {
     REGISTER : 0,
-    LOG_IN : 1
+    LOGIN : 1
   };
 
   /**
-   * Register an account using email address
+   * Register an account
    * @param email_address String email address
    * @param password String account password
    * @param isSuccessFn callback function to notify once the registering process is finished
@@ -65,8 +62,14 @@ module.exports = function DatabaseManager() {
     registerAndLoginHelper(ACCOUNT_ACTIONS.REGISTER, email_address, password, isSuccessFn);
   };
 
-  this.signInAccount = function(email_address, password, isSuccessFn) {
-    registerAndLoginHelper(ACCOUNT_ACTIONS.LOG_IN, email_address, password, isSuccessFn);
+  /**
+   * Login account
+   * @param email_address String email address
+   * @param password String account password
+   * @param isSuccessFn callback function to notify once the registering process is finished
+   */
+  this.loginAccount = function(email_address, password, isSuccessFn) {
+    registerAndLoginHelper(ACCOUNT_ACTIONS.LOGIN, email_address, password, isSuccessFn);
   }
 
   function registerAndLoginHelper(action, email_address, password, isSuccessFn) {
@@ -78,64 +81,40 @@ module.exports = function DatabaseManager() {
 
         // Check if account already existed
         var isAccountExisted = (doc != null) ? true : false;
+        if (!isAccountExisted) { // Account is not exist
 
-        if (!isAccountExisted) { // Account is not existed, create new account
+          if (action === ACCOUNT_ACTIONS.REGISTER) {
+            var new_account = {
+              account_email_address: email_address,
+              account_password: password
+            };
 
-          switch (action) {
-            case ACCOUNT_ACTIONS.REGISTER: {
+            // Insert new account to the collection
+            search_collection.insertOne(new_account);
 
-              var new_account = {
-                account_private_ID: guid(),
-                account_email_address: email_address,
-                account_password: password
-              };
-
-              // Insert new account to the collection
-              search_collection.insertOne(new_account);
-              isSuccessFn(true, new_account.account_private_ID);
-              break;
-            }
-
-            case ACCOUNT_ACTIONS.LOG_IN: {
-              isSuccessFn(false, "");
-              break;
-            }
-
-            default: {
-              break;
-            }
+            // Respond with the private ID
+            isSuccessFn(true);
+          } else if (action === ACCOUNT_ACTIONS.LOGIN) {
+            // Respond with empty string
+            isSuccessFn(false, "");
           }
 
         } else { // Account is already existed
+          if (action === ACCOUNT_ACTIONS.REGISTER) {
+            // Failed to register an account because
+            // the it's already exist
+            isSuccessFn(false);
+          } else if (action === ACCOUNT_ACTIONS.LOGIN) {
 
-          switch (action) {
-            case ACCOUNT_ACTIONS.REGISTER: {
+            if (doc.account_password === password) {
+              isSuccessFn(true, doc._id.toString());
+            } else {
               isSuccessFn(false, "");
-              break;
-            }
-
-            case ACCOUNT_ACTIONS.LOG_IN: {
-              isSuccessFn(true, doc.account_private_ID);
-              break;
-            }
-
-            default: {
-              break;
             }
           }
         }
       });
     });
-  }
-
-  /////////////////////////////////
-  // UTILITIES
-  /////////////////////////////////
-  function guid() {
-    function s4() {
-      return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-    }
-    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
   }
 
 };
