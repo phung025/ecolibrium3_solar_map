@@ -38,7 +38,7 @@ public class SolarAccountManager implements Serializable {
 
     // Server connection info
     private static final int CONNECTION_PORT = 4321;
-    private static final String IP_ADDRESS = "10.0.2.2";
+    private static final String IP_ADDRESS = "192.168.1.99";
     //10.0.2.2
     // Account login status
     public static boolean LOGIN_STATUS = false;
@@ -138,18 +138,27 @@ public class SolarAccountManager implements Serializable {
                     jsonData.toString()).get();
 
             JSONObject jsonResponse = new JSONObject(result);
-            String accountID = String.valueOf(jsonResponse.get("account_id"));
+            if (action == ACCOUNT_ACTION.LOG_IN) {
+                String accountID = String.valueOf(jsonResponse.get("account_id"));
 
-            // if successfully sign up, the client will receive the private user ID
-            if (!accountID.equals("")) {
-                account_private_id = result;
+                // if successfully sign up, the client will receive the private user ID
+                if (!accountID.equals("")) {
 
-                // Set email & password if successfully sign up
-                setEmail(email_address);
-                setPassword(input_password);
+                    // Set email & password if successfully sign in
+                    account_private_id = result;
+                    setEmail(email_address);
+                    setPassword(input_password);
 
-                success[0] = true;
-                LOGIN_STATUS = (action == ACCOUNT_ACTION.LOG_IN) ? true : false;
+                    success[0] = true;
+                    LOGIN_STATUS = (action == ACCOUNT_ACTION.LOG_IN) ? true : false;
+                }
+            } else if (action == ACCOUNT_ACTION.REGISTER) {
+                String isSuccess = String.valueOf(jsonResponse.get("is_registered"));
+
+                // if successfully sign up, the client will receive the private user ID
+                if (!isSuccess.equals("true")) {
+                    success[0] = true;
+                }
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
