@@ -15,6 +15,8 @@ var MongoClient = require('mongodb').MongoClient;
 MongoClient.connect(DATABASE_URL, function(err, db) {
   if(!err) {
     console.log("We're connected to MongoDB");
+  } else {
+  	console.log("Error occured while trying to connect to MongoDB")
   }
 });
 
