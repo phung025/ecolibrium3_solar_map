@@ -133,9 +133,9 @@ public class SolarAccountManager implements Serializable {
             String result = (new HTTPAsyncTask() {
                 @Override
                 protected void onPostExecute(String result) {}
-            }).execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? URIs.ACCOUNT_LOGIN : URIs.ACCOUNT_SIGN_UP),
-                    HTTPMethods.POST,
-                    jsonData.toString()).get();
+            }).execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? (URIs.ACCOUNT_LOGIN + "/" + email_address + "/" + input_password) : URIs.ACCOUNT_SIGN_UP),
+                    (action == ACCOUNT_ACTION.LOG_IN) ? HTTPMethods.GET : HTTPMethods.POST,
+                    (action == ACCOUNT_ACTION.LOG_IN) ? "" : jsonData.toString()).get();
 
             JSONObject jsonResponse = new JSONObject(result);
             if (action == ACCOUNT_ACTION.LOG_IN) {
@@ -182,7 +182,6 @@ public class SolarAccountManager implements Serializable {
     /**
      * Set the email of the app's account. This function should only be called when the user successfully
      * sign up or login the app
-     *
      * @param email_address
      * @return
      */
@@ -192,7 +191,6 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Get email address of the user
-     *
      * @return email address string
      */
     public String getEmail() throws IllegalAccessException {
@@ -206,7 +204,6 @@ public class SolarAccountManager implements Serializable {
     /**
      * Set the password of the app's account. This function should only be called when the user successfully
      * sign up or login the app
-     *
      * @param password
      * @return
      */
@@ -216,7 +213,6 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Get account password
-     *
      * @return password string
      */
     private String getPassword() throws IllegalAccessException {
@@ -227,16 +223,16 @@ public class SolarAccountManager implements Serializable {
     }
 
     /**
-     *
-     * @param id
+     * Set the account's private ID
+     * @param id account's private ID
      */
     private void setAccountPrivateID(String id) {
         account_private_id = id;
     }
 
     /**
-     *
-     * @return
+     * Get the account's private ID
+     * @return String account's private ID
      */
     private String getAccountPrivateID() throws IllegalAccessException {
         if (account_private_id == null) {
