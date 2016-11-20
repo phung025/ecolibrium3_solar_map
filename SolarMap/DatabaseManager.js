@@ -2,9 +2,11 @@
 // ALL KEYS FOR MONGODB DOCUMENTS
 /////////////////////////////////
 //
-// ACCOUNT_PRIVATE_ID: "account_private_ID",
-// ACCOUNT_EMAIL_ADDRESS: "account_email_address",
-// ACCOUNT_PASSWORD: "account_password"
+// ACCOUNT_PRIVATE_ID: {_id: <ObjectId>}
+// ACCOUNT_EMAIL_ADDRESS: {account_email_address: <String>}
+// ACCOUNT_PASSWORD: {account_password: <String>}
+//
+// Public locations: {{location_ID:<String>, location_name:<String>, users_interested:[]}, ...}
 //
 /////////////////////////////////
 
@@ -70,13 +72,12 @@ module.exports = function DatabaseManager() {
    */
   this.loginAccount = function(email_address, password, isSuccessFn) {
     registerAndLoginHelper(ACCOUNT_ACTIONS.LOGIN, email_address, password, isSuccessFn);
-  }
+  };
 
   function registerAndLoginHelper(action, email_address, password, isSuccessFn) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
-      // Get the collection we're going to search
-      var search_collection = db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE);
 
+      var search_collection = db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE);
       search_collection.findOne({account_email_address: email_address}).then(function(doc) {
 
         // Check if account already existed
@@ -112,6 +113,85 @@ module.exports = function DatabaseManager() {
               isSuccessFn(false, "");
             }
           }
+        }
+      });
+    });
+  }
+
+  /**
+   *
+   *
+   *
+   */
+  this.setInterestInLocation = function(authorization_ID, email_address, password, locationID, locationName, completionFN) {
+    MongoClient.connect(DATABASE_URL, function(err, db) {
+
+      isAuthorized(authorization_ID, email_address, password, function(isAllowed) {
+
+        if (isAllowed) {
+
+          var public_locations_collection = db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS);
+
+          // FIND IF THE LOCATION IS IN THE LIST
+          public_locations_collection.findOne({location_ID: locationID}).then(function(location_document) {
+
+            var isLocationFound = (location_document != null) ? true : false;
+            if (isLocationFound) {
+
+              // FIND IF USER ALREADY SHOW INTEREST IN THE LOCATION
+              public_locations_collection.findOne({$and:[{location_ID: locationID},{users_interested:authorization_ID}]}).then(function(location_document1) {
+
+                var filter = {location_ID: locationID};
+                var update = (location_document1 != null) ? {$pop:{users_interested: authorization_ID}} : {$push: {users_interested: authorization_ID}};
+
+                // Update interest list [Either remove or add interest]
+                public_locations_collection.updateOne(filter, update);
+              });
+            } else { // LOCATION IS NOT IN THE DATABASE, CREATE NEW LOCATION AND ADD IT TO DATABASE
+
+              var new_location = {
+                location_ID: locationID,
+                location_name: locationName,
+                users_interested: [authorization_ID]
+              };
+              public_locations_collection.insertOne(new_location);
+            }
+          });
+
+          // Successfully set interest in location
+          completionFN(true);
+        } else {
+
+          // Failed to get authorized for setting interest in a location
+          completionFN(false);
+        }
+      });
+    });
+  }
+
+  /**
+   *
+   *
+   */
+  function isAuthorized(authorization_id, email_address, password, completionFN) {
+    MongoClient.connect(DATABASE_URL, function(err, db) {
+
+      var {ObjectId} = require('mongodb'); // or ObjectID
+      var authorizeQuery = {
+        $and: [
+          {_id: ObjectId(authorization_id)},
+          {account_email_address: email_address},
+          {account_password: password}
+        ]
+      };
+
+      db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).findOne(authorizeQuery).then(function(user_document) {
+
+        var isAuthorized = (user_document != null) ? true : false;
+        if (isAuthorized) { // User is authorized
+          completionFN(true);
+        } else {
+          completionFN(false);
         }
       });
     });

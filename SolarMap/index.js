@@ -4,7 +4,8 @@ const SERVER_PORT = 4321;
 var URIs = {
   URI_LOGIN: "/API/loginAccount",
   URI_SIGN_UP: "/API/registerAccount",
-  URI_GET_ACHIEVEMENTS: "/API/getAchievements"
+  URI_GET_ACHIEVEMENTS: "/API/getAchievements",
+  URI_SET_LOCATION_INTEREST: "/API/setInterestInLocation"
 };
 ///////////////////
 // Database
@@ -212,29 +213,29 @@ app.post('/API/addPrivateLocation', function (req, res) {
     res.json(req.body);
 });
 
-app.post('/API/addPublicLocation', function (req, res) {
+app.post(URIs.URI_SET_LOCATION_INTEREST, function (req, res) {
 
-    // If for some reason, the JSON isn't parsed, return a HTTP ERROR
-    // 400
-    if (!req.body) return res.sendStatus(400)
+  // If for some reason, the JSON isn't parsed, return a HTTP ERROR
+  // 400
+  if (!req.body) return res.sendStatus(400)
 
-    //gather data from req
-	var accountID = req.body.account_id;
-	var myNewLocation = {
-		locationID: req.body.location_id,
-		locationLongitude: req.body.location_longitude,
-		locationLatitude: req.body.location_latitude,
-		name: req.body.location_name
-	}
+  //gather data from req
+  var account_id = req.body.account_id;
+  var email = req.body.email;
+  var password = req.body.password;
+  var location_id = req.body.location_id;
+  var location_name = req.body.location_name;
 
-	if(getAccountData(accountID,0) != null)
-	{
-		publicLocations.push(myNewLocation);
-	}
+  databaseManager.setInterestInLocation(account_id, email, password, location_id, location_name, function(isSuccess) {
 
-    console.log('/addPublicLocation POST accessed, jsonData=', req.body);
-
-    res.json(req.body);
+    if (isSuccess) {
+      res.status(200);
+      console.log(URIs.URI_SET_LOCATION_INTEREST + ' POST accessed and accepted');
+    } else {
+      res.status(409);
+      console.log(URIs.URI_SET_LOCATION_INTEREST + ' POST accessed but rejected');
+    }
+  });
 });
 
 // ----------------------------------------
