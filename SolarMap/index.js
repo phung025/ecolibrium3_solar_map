@@ -5,6 +5,7 @@ var URIs = {
   URI_LOGIN: "/API/loginAccount/:email/:password",
   URI_SIGN_UP: "/API/registerAccount",
   URI_DELETE_ACCOUNT: "/API/deleteAccount",
+  URI_CHANGE_ACCOUNT_PASSWORD: "/API/changeAccountPassword",
   URI_GET_ACHIEVEMENTS: "/API/getAchievements",
   URI_SET_LOCATION_INTEREST: "/API/setInterestInLocation",
   URI_GET_LIST_OF_INTEREST_LOCATIONS: "/API/getListOfInterestLocations/:account_id/:email/:password/:json_available_locations",
@@ -45,21 +46,21 @@ app.use(bodyParser.json());  // support json encoded bodies
  */
 app.post(URIs.URI_SIGN_UP, function (req, res) {
 
-    // If for some reason, the JSON isn't parsed, return a HTTP ERROR
-    // 400
-    if (!req.body) return res.sendStatus(400);
+  // If for some reason, the JSON isn't parsed, return a HTTP ERROR
+  // 400
+  if (!req.body) return res.sendStatus(400);
 
-    databaseManager.registerAccount(req.body.email, req.body.password, function(isSuccess) {
-      if (isSuccess) {
-        res.status(200);
-        console.log(URIs.URI_SIGN_UP + ' POST accessed and approved');
-      } else {
-        res.status(409);
-        console.log(URIs.URI_SIGN_UP + ' POST accessed but rejected');
-      }
+  databaseManager.registerAccount(req.body.email, req.body.password, function(isSuccess) {
+    if (isSuccess) {
+      res.status(200);
+      console.log(URIs.URI_SIGN_UP + ' POST accessed and approved');
+    } else {
+      res.status(409);
+      console.log(URIs.URI_SIGN_UP + ' POST accessed but rejected');
+    }
 
-      res.send(JSON.stringify({is_registered: isSuccess}));
-    });
+    res.send(JSON.stringify({is_registered: isSuccess}));
+  });
 });
 
 app.get(URIs.URI_LOGIN, function(req, res) {
@@ -92,7 +93,7 @@ app.get(URIs.URI_LOGIN, function(req, res) {
 app.delete(URIs.URI_DELETE_ACCOUNT, function(req, res) {
   // If for some reason, the JSON isn't parsed, return a HTTP ERROR
   // 400
-  if (!req.params) return res.sendStatus(400);
+  if (!req.body) return res.sendStatus(400);
 
   databaseManager.removeAccount(req.body.email, req.body.password, function(isSuccess) {
     if (isSuccess) {
@@ -105,6 +106,34 @@ app.delete(URIs.URI_DELETE_ACCOUNT, function(req, res) {
     res.send(JSON.stringify({is_success:isSuccess}));
   });
 });
+
+/**
+ * Change account's password
+ *
+ * @param {email: <String>} - Account's email address
+ * @param {current_password: <String>} - Account's current password
+ * @param {new_password: <String>} - Account's new password
+ * @return {is_success: <boolean>} - stringified JSON data containing boolean value.
+ *         Return true if successfully change the account's password, else false
+ */
+app.post(URIs.URI_CHANGE_ACCOUNT_PASSWORD, function(req, res) {
+  // If for some reason, the JSON isn't parsed, return a HTTP ERROR
+  // 400
+  if (!req.body) return res.sendStatus(400);
+
+  databaseManager.changePassword(req.body.email, req.body.current_password, req.body.new_password, function(isSuccess) {
+    if (isSuccess) {
+      re.status(200);
+      console.log(URIs.URI_CHANGE_ACCOUNT_PASSWORD + ' POST accessed and approved');
+    } else {
+      res.status(404);
+      console.log(URIs.URI_CHANGE_ACCOUNT_PASSWORD + ' POST accessed but rejected');
+    }
+    res.send(JSON.stringify({is_success:isSuccess}));
+  });
+});
+
+//databaseManager.removeAccount("phungle.thanhnam@gmail.com", "password2", function(isSuccess) {});
 
 //databaseManager.setInterestInLocation("5831135cd39e652cd8241dab", "phungle.thanhnam@gmail.com", "password2", "516721", "University of Minnesota Duluth", function(isSuccess){});
 //databaseManager.setInterestInLocation("5831135cd39e652cd8241dac", "phung025@d.umn.ed", "password1", "516721", "University of Minnesota Duluth", function(isSuccess){});
@@ -163,9 +192,8 @@ app.post(URIs.URI_SET_LOCATION_INTEREST, function(req, res) {
   var email = req.body.email;
   var password = req.body.password;
   var location_id = req.body.location_id;
-  var location_name = req.body.location_name;
 
-  databaseManager.setInterestInLocation(account_id, email, password, location_id, location_name, function(isSuccess) {
+  databaseManager.setInterestInLocation(account_id, email, password, location_id, function(isSuccess) {
 
     if (isSuccess) {
       res.status(200);

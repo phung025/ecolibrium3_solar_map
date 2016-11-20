@@ -2,11 +2,8 @@
 // ALL KEYS FOR MONGODB DOCUMENTS
 /////////////////////////////////
 //
-// ACCOUNT_PRIVATE_ID: {_id: <ObjectId>}
-// ACCOUNT_EMAIL_ADDRESS: {account_email_address: <String>}
-// ACCOUNT_PASSWORD: {account_password: <String>}
-//
-// Public locations: {{location_ID:<String>, location_name:<String>, users_interested:[], total_users_interested:<Int>}, ...}
+// {{_id: <ObjectId>}, {account_email_address: <String>}, {account_password: <String>}}
+// {location_ID:<String>, location_name:<String>, users_interested:[], total_users_interested:<Int>}
 //
 /////////////////////////////////
 
@@ -142,6 +139,15 @@ module.exports = function DatabaseManager() {
         var isAccountExisted = (doc != null) ? true : false;
         if (isAccountExisted) { // Account is existed, remove it from the database
 
+          // Remove all user's votes in the public locations collection
+          var account_id = doc._id.toString();
+          var account_email = doc.account_email_address;
+          var account_password = doc.account_password;
+
+          var filter = {users_interested:{$elemMatch:{$eq:account_id}}};
+          var update = {$pop:{users_interested:account_id},$inc:{total_users_interested:-1}};
+          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).updateMany(filter, update);
+
           // Delete the account
           db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).deleteOne(filter);
 
@@ -155,11 +161,35 @@ module.exports = function DatabaseManager() {
   };
 
   /**
+   * Change the account's password
+   *
+   * @param email_address - account's email address
+   * @param old_password - account's current password
+   * @param new_password - account's new password
+   * @param completionFN - callback function once the process is done
+   */
+  this.changePassword = function(email_address, current_password, new_password, completionFN) {
+    MongoClient.connect(DATABASE_URL, function(err, db) {
+      var filter = {$and:[{account_email_address:email_address},{account_password:current_password}]};
+      db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).findOne(filter).then(function(doc) {
+        var isAccountExisted = (doc != null) ? true : false;
+        if (isAccountExisted) { // Account is found, change the account's password
+          var update = {$set:{account_password:new_password}};
+          db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).updateOne(filter, update);
+          completionFN(true);
+        } else { // Account is not found, return false for failing to change account's password
+          completionFN(false);
+        }
+      });
+    });
+  };
+
+  /**
    *
    *
    *
    */
-  this.setInterestInLocation = function(authorization_ID, email_address, password, locationID, locationName, completionFN) {
+  this.setInterestInLocation = function(authorization_ID, email_address, password, locationID, completionFN) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
 
       isAuthorized(authorization_ID, email_address, password, function(isAllowed) {
@@ -187,7 +217,6 @@ module.exports = function DatabaseManager() {
 
               var new_location = {
                 location_ID: locationID,
-                location_name: locationName,
                 users_interested: [authorization_ID],
                 total_users_interested: 1
               };
