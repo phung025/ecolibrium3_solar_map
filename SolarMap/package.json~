@@ -9,7 +9,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "node": "index.js"
+    "start": "mongod &",
+    "start_server": "node index.js"
   },
   "keywords": [
     "Server",

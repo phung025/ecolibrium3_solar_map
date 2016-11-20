@@ -6,7 +6,7 @@
 // ACCOUNT_EMAIL_ADDRESS: {account_email_address: <String>}
 // ACCOUNT_PASSWORD: {account_password: <String>}
 //
-// Public locations: {{location_ID:<String>, location_name:<String>, users_interested:[]}, ...}
+// Public locations: {{location_ID:<String>, location_name:<String>, users_interested:[], total_users_interested:<Int>}, ...}
 //
 /////////////////////////////////
 
@@ -56,6 +56,7 @@ module.exports = function DatabaseManager() {
 
   /**
    * Register an account
+   *
    * @param email_address String email address
    * @param password String account password
    * @param isSuccessFn callback function to notify once the registering process is finished
@@ -66,6 +67,7 @@ module.exports = function DatabaseManager() {
 
   /**
    * Login account
+   *
    * @param email_address String email address
    * @param password String account password
    * @param isSuccessFn callback function to notify once the registering process is finished
@@ -142,7 +144,7 @@ module.exports = function DatabaseManager() {
               public_locations_collection.findOne({$and:[{location_ID: locationID},{users_interested:authorization_ID}]}).then(function(location_document1) {
 
                 var filter = {location_ID: locationID};
-                var update = (location_document1 != null) ? {$pop:{users_interested: authorization_ID}} : {$push: {users_interested: authorization_ID}};
+                var update = (location_document1 != null) ? {$pop:{users_interested:authorization_ID},$inc:{total_users_interested:-1}} : {$push:{users_interested:authorization_ID},$inc:{total_users_interested:1}};
 
                 // Update interest list [Either remove or add interest]
                 public_locations_collection.updateOne(filter, update);
@@ -152,7 +154,8 @@ module.exports = function DatabaseManager() {
               var new_location = {
                 location_ID: locationID,
                 location_name: locationName,
-                users_interested: [authorization_ID]
+                users_interested: [authorization_ID],
+                total_users_interested: 1
               };
               public_locations_collection.insertOne(new_location);
             }
@@ -167,11 +170,90 @@ module.exports = function DatabaseManager() {
         }
       });
     });
-  }
+  };
 
   /**
+   * Get the list of all locations that have people showing interests. Return
+   * a list containing all locations that the client does not have instead
+   * of getting every locations.
    *
+   * @param authorization_ID: <String> - private ID of the account
+   * @param email_address: <String> - email address of the account
+   * @param password: <String> - password of the account
+   * @param available_locations: <[location_id: <String>]> - array of type string
+   *        with all available locations id that the client has
+   * @param completionFN - callback function when the query is finish
+   * @return [{location_id: <String>, interest_count: <int>}] - Stringified JSONArray
+   *         containing all locations that the client does not have
+   */
+  this.getListOfInterestLocations = function(authorization_ID, email_address, password, available_locations, completionFN) {
+    MongoClient.connect(DATABASE_URL, function(err, db) {
+      isAuthorized(authorization_ID, email_address, password, function(isAllowed){
+
+        if (isAllowed) {
+
+          // Find all locations that are not in the list
+          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).find({location_ID:{$nin:available_locations}}).toArray().then(function(docs) {
+
+            // Map the array to new array containing only needed data. i.e. total people showing interest & location id
+            var returned_list = docs.map(function(element) {
+              var mappedJSONData = {
+                location_id: element.location_ID,
+                interest_count: element.total_users_interested
+              };
+              return mappedJSONData;
+            });
+
+            completionFN(true, returned_list);
+          });
+        } else {
+          // Failed to get authorization, return false and empty list
+          completionFN(false, []);
+        }
+      });
+    });
+  };
+
+  /**
+   * Get the total number of people interested in having solar panel installed in
+   * the location
    *
+   * @param account_id: <String> - private ID of the account
+   * @param email: <String> - email address of the account
+   * @param password: <String> - password of the account
+   * @param location_id: <String> - ID of the selected location
+   * @return result: <int> - total count of people showing interest in the location
+   *         Return -1 if building not found or authorization process failed.
+   */
+  this.getCountInterestInLocation = function(authorization_ID, email_address, password, locationID, completionFN) {
+    MongoClient.connect(DATABASE_URL, function(err, db) {
+      isAuthorized(authorization_ID, email_address, password, function(isAllowed) {
+        if (isAllowed) {
+          var public_locations_collection = db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS);
+          public_locations_collection.findOne({location_ID:locationID}).then(function(location_document) {
+            if (location_document != null) {
+              // Return the total count of people having interest in the location
+              completionFN(location_document.total_users_interested);
+            } else {
+              // Location is not found
+              completionFN(-1);
+            }
+          });
+        } else {
+          // Can't get authorization for retrieving the count
+          completionFN(-1);
+        }
+      });
+    });
+  };
+
+  /**
+   * Get authorization using account's private ID, account email address, and account password
+   *
+   * @param authorization_id: <String> - account's private ID
+   * @param email_address: <String> - account's email address
+   * @param password: <String> - account's password
+   * @param completionFN - callback function once the authorizing process is finished
    */
   function isAuthorized(authorization_id, email_address, password, completionFN) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
