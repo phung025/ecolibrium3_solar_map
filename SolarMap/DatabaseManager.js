@@ -76,6 +76,14 @@ module.exports = function DatabaseManager() {
     registerAndLoginHelper(ACCOUNT_ACTIONS.LOGIN, email_address, password, isSuccessFn);
   };
 
+  /**
+   * Helper function for login & sign up process
+   *
+   * @param action ACCOUNT_ACTIONS enum type indicating login or sign up action
+   * @param email_address - account email address
+   * @param password - account password
+   * @param isSuccessFN - callback function once the login/sign up process is finished
+   */
   function registerAndLoginHelper(action, email_address, password, isSuccessFn) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
 
@@ -85,7 +93,6 @@ module.exports = function DatabaseManager() {
         // Check if account already existed
         var isAccountExisted = (doc != null) ? true : false;
         if (!isAccountExisted) { // Account is not exist
-
           if (action === ACCOUNT_ACTIONS.REGISTER) {
             var new_account = {
               account_email_address: email_address,
@@ -101,17 +108,18 @@ module.exports = function DatabaseManager() {
             // Respond with empty string
             isSuccessFn(false, "");
           }
-
         } else { // Account is already existed
           if (action === ACCOUNT_ACTIONS.REGISTER) {
             // Failed to register an account because
             // the it's already exist
             isSuccessFn(false);
           } else if (action === ACCOUNT_ACTIONS.LOGIN) {
-
+            // Check if password is correct
             if (doc.account_password === password) {
+              // Return true if successfully login with the account private ID
               isSuccessFn(true, doc._id.toString());
             } else {
+              // Return false if failed to login with empty string
               isSuccessFn(false, "");
             }
           }
@@ -119,6 +127,32 @@ module.exports = function DatabaseManager() {
       });
     });
   }
+
+  /**
+   * Remove the account from the database
+   * @param email_address - account email address
+   * @param password - account's password
+   * @param completionFN - callback function once the process is done
+   */
+  this.removeAccount = function(email_address, password, completionFN) {
+    MongoClient.connect(DATABASE_URL, function(err, db) {
+
+      var filter = {$and:[{account_email_address:email_address},{account_password:password}]};
+      db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).findOne(filter).then(function(doc) {
+        var isAccountExisted = (doc != null) ? true : false;
+        if (isAccountExisted) { // Account is existed, remove it from the database
+
+          // Delete the account
+          db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).deleteOne(filter);
+
+          // Return true for successfully removing the account
+          completionFN(true);
+        } else { // Account is not existed, return false
+          completionFN(false);
+        }
+      });
+    });
+  };
 
   /**
    *
@@ -191,7 +225,6 @@ module.exports = function DatabaseManager() {
       isAuthorized(authorization_ID, email_address, password, function(isAllowed){
 
         if (isAllowed) {
-
           // Find all locations that are not in the list
           db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).find({location_ID:{$nin:available_locations}}).toArray().then(function(docs) {
 
@@ -203,7 +236,7 @@ module.exports = function DatabaseManager() {
               };
               return mappedJSONData;
             });
-
+            // Return true if successful and the list containing all needed locations
             completionFN(true, returned_list);
           });
         } else {
@@ -223,10 +256,14 @@ module.exports = function DatabaseManager() {
    * @param password: <String> - password of the account
    * @param location_id: <String> - ID of the selected location
    * @return result: <int> - total count of people showing interest in the location
-   *         Return -1 if building not found or authorization process failed.
+   *         Return -1 if building not found or -2 if authorizing process failed.
    */
   this.getCountInterestInLocation = function(authorization_ID, email_address, password, locationID, completionFN) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
+
+      const LOCATION_NOT_FOUND = -1;
+      const UNAUTHORIZED = -2;
+
       isAuthorized(authorization_ID, email_address, password, function(isAllowed) {
         if (isAllowed) {
           var public_locations_collection = db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS);
@@ -236,12 +273,12 @@ module.exports = function DatabaseManager() {
               completionFN(location_document.total_users_interested);
             } else {
               // Location is not found
-              completionFN(-1);
+              completionFN(LOCATION_NOT_FOUND);
             }
           });
         } else {
           // Can't get authorization for retrieving the count
-          completionFN(-1);
+          completionFN(UNAUTHORIZED);
         }
       });
     });
@@ -266,13 +303,13 @@ module.exports = function DatabaseManager() {
           {account_password: password}
         ]
       };
-
       db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).findOne(authorizeQuery).then(function(user_document) {
-
         var isAuthorized = (user_document != null) ? true : false;
         if (isAuthorized) { // User is authorized
+          // Return true if user is authorized
           completionFN(true);
         } else {
+          // Return false if user is not authorized
           completionFN(false);
         }
       });

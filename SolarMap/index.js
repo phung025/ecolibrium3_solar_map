@@ -4,6 +4,7 @@ const SERVER_PORT = 4321;
 var URIs = {
   URI_LOGIN: "/API/loginAccount/:email/:password",
   URI_SIGN_UP: "/API/registerAccount",
+  URI_DELETE_ACCOUNT: "/API/deleteAccount",
   URI_GET_ACHIEVEMENTS: "/API/getAchievements",
   URI_SET_LOCATION_INTEREST: "/API/setInterestInLocation",
   URI_GET_LIST_OF_INTEREST_LOCATIONS: "/API/getListOfInterestLocations/:account_id/:email/:password/:json_available_locations",
@@ -63,21 +64,46 @@ app.post(URIs.URI_SIGN_UP, function (req, res) {
 
 app.get(URIs.URI_LOGIN, function(req, res) {
 
-    // If for some reason, the JSON isn't parsed, return a HTTP ERROR
-    // 400
-    if (!req.params) return res.sendStatus(400);
+  // If for some reason, the JSON isn't parsed, return a HTTP ERROR
+  // 400
+  if (!req.params) return res.sendStatus(400);
 
-    databaseManager.loginAccount(req.params.email, req.params.password, function(isSuccess, authorizationCode) {
-      if (isSuccess) {
-        res.status(200);
-        console.log(URIs.URI_LOGIN + ' GET accessed and approved');
-      } else {
-        res.status(404);
-        console.log(URIs.URI_LOGIN + ' GET accessed but rejected');
-      }
+  databaseManager.loginAccount(req.params.email, req.params.password, function(isSuccess, authorizationCode) {
+    if (isSuccess) {
+      res.status(200);
+      console.log(URIs.URI_LOGIN + ' GET accessed and approved');
+    } else {
+      res.status(404);
+      console.log(URIs.URI_LOGIN + ' GET accessed but rejected');
+    }
 
-      res.send(JSON.stringify({account_id: authorizationCode}));
-    });
+    res.send(JSON.stringify({account_id: authorizationCode}));
+  });
+});
+
+/**
+ * Remove account from the database
+ *
+ * @param {email: <String>} - account email address
+ * @param {password: <String>} - account password
+ * @return {is_success: <boolean>} - stringified JSON data containing boolean value.
+ *         Return true if successfully removed the account, else false
+ */
+app.delete(URIs.URI_DELETE_ACCOUNT, function(req, res) {
+  // If for some reason, the JSON isn't parsed, return a HTTP ERROR
+  // 400
+  if (!req.params) return res.sendStatus(400);
+
+  databaseManager.removeAccount(req.body.email, req.body.password, function(isSuccess) {
+    if (isSuccess) {
+      re.status(200);
+      console.log(URIs.URI_DELETE_ACCOUNT + ' DELETE accessed and approved');
+    } else {
+      res.status(404);
+      console.log(URIs.URI_DELETE_ACCOUNT + ' DELTE accessed but rejected');
+    }
+    res.send(JSON.stringify({is_success:isSuccess}));
+  });
 });
 
 //databaseManager.setInterestInLocation("5831135cd39e652cd8241dab", "phungle.thanhnam@gmail.com", "password2", "516721", "University of Minnesota Duluth", function(isSuccess){});
@@ -92,7 +118,7 @@ app.get(URIs.URI_LOGIN, function(req, res) {
  * @param password: <String> - password of the account
  * @param location_id: <String> - ID of the selected location
  * @return {result: <int>} - total count of people showing interest in the location.
- *         Return -1 if building not found or authorization process failed.
+ *         Return -1 if building not found or -2 if authorizing process failed.
  */
 app.get(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION, function(req, res) {
 
@@ -107,8 +133,8 @@ app.get(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION, function(req, res) {
   var location_id = req.params.location_id;
 
   databaseManager.getCountInterestInLocation(account_id, email, password, location_id, function(returned_size) {
-    if (returned_size === -1) {
-      res.status(404);
+    if (returned_size < 0) {
+      res.status((returned_size === -1) ? 404 : 409);
       console.log(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION + ' GET accessed and rejected');
     } else {
       res.status(200);
@@ -178,7 +204,6 @@ app.get(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS, function(req, res) {
   var available_locations = (req.params.available_locations).split(',');
 
   databaseManager.getListOfInterestLocations(account_id, email, password, available_locations, function(isSuccess, returned_list) {
-
     if (isSuccess) {
       res.status(200);
       console.log(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS + ' GET accessed and accepted');
