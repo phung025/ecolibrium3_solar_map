@@ -1,7 +1,9 @@
 package umd.solarmap;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,7 +34,6 @@ public class StartupLoginActivity extends AppCompatActivity {
         mPasswordView = (EditText) findViewById(R.id.password_field);
         mSignInButton = (Button) findViewById(R.id.sign_in_button);
         mSignUpButton = (Button) findViewById(R.id.sign_up_button);
-
     }
 
     public void onTouchSignInButton(View view) {
@@ -42,7 +43,10 @@ public class StartupLoginActivity extends AppCompatActivity {
         String password = mPasswordView.getText().toString();
 
         if(SolarAccountManager.appAccountManager().login(email_address, password)) {
-            finish();
+
+            // Start the main activity
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
         } else {
 
         }
