@@ -21,29 +21,41 @@ module.exports = function DatabaseManager() {
    * Connect to the MongoDB database
    */
   this.connect = function() {
-    // Connect to the db
-    MongoClient.connect(DATABASE_URL, function(err, db) {
-      if(!err) {
 
-        console.log("\n============================================================\n");
+    function connectMongoDB() {
+      // Connect to the db
+      MongoClient.connect(DATABASE_URL, function(err, db) {
+        if(!err) {
 
-        console.log("We're connected to MongoDB\n");
+          console.log("\n============================================================\n");
 
-        // Set up collection containing user account
-        console.log("Creating collection " + COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE + "...");
-        db.createCollection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE, function(err, collection) {});
+          console.log("We're connected to MongoDB\n");
 
-        // Set up collection containing all public solar locations in Duluth
-        console.log("Creating collection " + COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS + "...");
-        db.createCollection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS, function(err, collection) {});
+          // Set up collection containing user account
+          console.log("Creating collection " + COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE + "...");
+          db.createCollection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE, function(err, collection) {});
 
-        console.log("\nFinished setting up database");
+          // Set up collection containing all public solar locations in Duluth
+          console.log("Creating collection " + COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS + "...");
+          db.createCollection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS, function(err, collection) {});
 
-        console.log("\n============================================================\n");
-      } else {
-      	console.log("Error occured while trying to connect to MongoDB")
-      }
-    });
+          console.log("\nFinished setting up database");
+
+          console.log("\n============================================================\n");
+        } else {
+          console.log("Error occured while trying to connect to MongoDB");
+
+          // Reconnect to MongoDB after 5 seconds
+          setTimeout(function() {
+            console.log("Trying to reconnect to MongoDB...\n")
+            connectMongoDB();
+          }, 5000);
+        }
+      });
+    }
+
+    // Connect to MongoDB
+    connectMongoDB();
   };
 
   var ACCOUNT_ACTIONS = {
@@ -134,8 +146,8 @@ module.exports = function DatabaseManager() {
   this.removeAccount = function(email_address, password, completionFN) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
 
-      var filter = {$and:[{account_email_address:email_address},{account_password:password}]};
-      db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).findOne(filter).then(function(doc) {
+      var filter_account = {$and:[{account_email_address:email_address},{account_password:password}]};
+      db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).findOne(filter_account).then(function(doc) {
         var isAccountExisted = (doc != null) ? true : false;
         if (isAccountExisted) { // Account is existed, remove it from the database
 
@@ -144,12 +156,12 @@ module.exports = function DatabaseManager() {
           var account_email = doc.account_email_address;
           var account_password = doc.account_password;
 
-          var filter = {users_interested:{$elemMatch:{$eq:account_id}}};
+          var filter_interest = {users_interested:{$elemMatch:{$eq:account_id}}};
           var update = {$pop:{users_interested:account_id},$inc:{total_users_interested:-1}};
-          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).updateMany(filter, update);
+          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).updateMany(filter_interest, update);
 
           // Delete the account
-          db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).deleteOne(filter);
+          db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE).deleteOne(filter_account);
 
           // Return true for successfully removing the account
           completionFN(true);
@@ -246,8 +258,6 @@ module.exports = function DatabaseManager() {
    * @param available_locations: <[location_id: <String>]> - array of type string
    *        with all available locations id that the client has
    * @param completionFN - callback function when the query is finish
-   * @return [{location_id: <String>, interest_count: <int>}] - Stringified JSONArray
-   *         containing all locations that the client does not have
    */
   this.getListOfInterestLocations = function(authorization_ID, email_address, password, available_locations, completionFN) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
@@ -284,8 +294,6 @@ module.exports = function DatabaseManager() {
    * @param email: <String> - email address of the account
    * @param password: <String> - password of the account
    * @param location_id: <String> - ID of the selected location
-   * @return result: <int> - total count of people showing interest in the location
-   *         Return -1 if building not found or -2 if authorizing process failed.
    */
   this.getCountInterestInLocation = function(authorization_ID, email_address, password, locationID, completionFN) {
     MongoClient.connect(DATABASE_URL, function(err, db) {
