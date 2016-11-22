@@ -8,7 +8,7 @@ var URIs = {
   URI_CHANGE_ACCOUNT_PASSWORD: "/API/changeAccountPassword",
   URI_GET_ACHIEVEMENTS: "/API/getAchievements",
   URI_SET_LOCATION_INTEREST: "/API/setInterestInLocation",
-  URI_GET_LIST_OF_INTEREST_LOCATIONS: "/API/getListOfInterestLocations/:account_id/:email/:password/:json_available_locations",
+  URI_GET_LIST_OF_INTEREST_LOCATIONS: "/API/getListOfInterestLocations/:account_id/:email/:password/:available_locations",
   URI_GET_COUNT_INTEREST_IN_LOCATION: "/API/getCountInterestInLocation/:account_id/:email/:password/:location_id"
 };
 ///////////////////
