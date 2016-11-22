@@ -24,11 +24,11 @@ import com.esri.arcgisruntime.datasource.FeatureTable;
 import com.esri.arcgisruntime.datasource.Field;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.geometry.Envelope;
+import com.esri.arcgisruntime.geometry.GeometryEngine;
 import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.geometry.SpatialReferences;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
-import com.esri.arcgisruntime.layers.Layer;
 import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
@@ -50,12 +50,9 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -78,6 +75,8 @@ public class MapFragment extends Fragment {
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
 
+    private List<SolarProject> installed_projects;
+
     // Map Layers
     private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
 
@@ -93,6 +92,8 @@ public class MapFragment extends Fragment {
 
     public void onActivityCreated(Bundle savedInstance) {
         super.onActivityCreated(savedInstance);
+
+        installed_projects = new ArrayList<>();
 
         locatorTask = new LocatorTask(getString(R.string.geocode));
         insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
@@ -143,6 +144,21 @@ public class MapFragment extends Fragment {
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, mainMap.getSpatialReference());
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
+
+                double wgsTolerance = 0.5;
+                Point cp = new Point(clickPoint.getX(), clickPoint.getY(), mainMap.getSpatialReference());
+                cp = (Point) GeometryEngine.project(cp, SpatialReferences.getWgs84());
+                for (SolarProject s : installed_projects) {
+                    if (s.p != null) {
+                        Point k = s.p;
+//                        Point k = (Point) GeometryEngine.project(s.p, mainMap.getSpatialReference());
+//                        System.out.print(k.getX() + "," + k.getY() + " might be in " + cp.getX() + "," + cp.getY() + "\n");
+                        if ((k.getX() < cp.getX()+wgsTolerance && k.getX() > cp.getX()-wgsTolerance) && (k.getY() < cp.getY()+wgsTolerance && k.getY() > cp.getY()-wgsTolerance)) {
+                            System.out.println("Title : " + s.title);
+                        }
+                    }
+                }
+
                 // Gets feature attributes. Change made HERE, making the select feature call on the service is incorrect.
                 final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
 
@@ -250,10 +266,10 @@ public class MapFragment extends Fragment {
             } else if ((mainMap.getLoadStatus() == LoadStatus.LOADED)) {
 
 
-                for (Layer layer : mainMap.getOperationalLayers()) {
-
-                    System.out.println(layer.getName() + layer.getId());
-                }
+//                for (Layer layer : mainMap.getOperationalLayers()) {
+//
+//                    System.out.println(layer.getName() + layer.getId());
+//                }
 
                 mainMap.getOperationalLayers().set(0, insol_dlh_annovtpk);
             }
@@ -290,7 +306,6 @@ public class MapFragment extends Fragment {
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-                System.out.println("X: " + e.getX() + "\nY: "+ e.getY());
                 // get the point that was clicked and convert it to a point in map coordinates
                 Point clickPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
                 int tolerance = 44;
@@ -318,20 +333,19 @@ public class MapFragment extends Fragment {
                                 Feature current_building_feature = result.iterator().next();
                                 FeatureTable selected_building_feature_table = current_building_feature.getFeatureTable();
                                    Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
-                                System.out.println("Building ID: " + current_building_feature.getAttributes().toString());
-                                System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
-                                System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
-                                System.out.println("All fields of this feature table: ");
+//                                System.out.println("Building ID: " + current_building_feature.getAttributes().toString());
+//                                System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
+//                                System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
+//                                System.out.println("All fields of this feature table: ");
                                 while (all_fields_of_selected_building.hasNext()) {
                                     Field current_field = all_fields_of_selected_building.next();
-                                    System.out.println("Name: " + current_field.getName() +
-                                            " | Alias: " + current_field.getAlias() +
-                                            " | Domain: " + current_field.getDomain() +
-                                            " | Field type: " + current_field.getFieldType().toString() +
-                                            " | Length: " + current_field.getLength());
+//                                    System.out.println("Name: " + current_field.getName() +
+//                                            " | Alias: " + current_field.getAlias() +
+//                                            " | Domain: " + current_field.getDomain() +
+//                                            " | Field type: " + current_field.getFieldType().toString() +
+//                                            " | Length: " + current_field.getLength());
                                 }
-
-                                System.out.println("\n\n");
+//                                System.out.println("\n\n");
                             }
 
                         } catch (Exception e) {
@@ -478,6 +492,8 @@ public class MapFragment extends Fragment {
         protected void onPostExecute(List<SolarProject> result) {
             // create the symbol to mark on the map
             SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
+
+            installed_projects = result;
 
             // display each point on the map
             for (SolarProject s : result) {
