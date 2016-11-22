@@ -145,7 +145,7 @@ public class MapFragment extends Fragment {
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
 
-                double wgsTolerance = 0.5;
+                double wgsTolerance = 0.00001;
                 Point cp = new Point(clickPoint.getX(), clickPoint.getY(), mainMap.getSpatialReference());
                 cp = (Point) GeometryEngine.project(cp, SpatialReferences.getWgs84());
                 for (SolarProject s : installed_projects) {
@@ -154,7 +154,22 @@ public class MapFragment extends Fragment {
 //                        Point k = (Point) GeometryEngine.project(s.p, mainMap.getSpatialReference());
 //                        System.out.print(k.getX() + "," + k.getY() + " might be in " + cp.getX() + "," + cp.getY() + "\n");
                         if ((k.getX() < cp.getX()+wgsTolerance && k.getX() > cp.getX()-wgsTolerance) && (k.getY() < cp.getY()+wgsTolerance && k.getY() > cp.getY()-wgsTolerance)) {
-                            System.out.println("Title : " + s.title);
+                            // create a TextView to display field values
+                            TextView calloutContent = new TextView(getContext());
+                            // Sets textView setting
+                            calloutContent.setTextColor(Color.BLACK);
+                            calloutContent.setSingleLine(false);
+                            calloutContent.setVerticalScrollBarEnabled(true);
+                            calloutContent.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
+                            calloutContent.setMovementMethod(new ScrollingMovementMethod());
+                            calloutContent.append("Title : " + s.title + "\n");
+                            calloutContent.append("Desc : " + s.des + "\n");
+                            calloutContent.append("Link : " + s.ulink + "\n");
+                            calloutContent.append("Date : " + s.upd + "\n");
+                            calloutContent.append("Wgs84Point : " + "(" + s.p.getX() + "," + s.p.getY() + ")");
+                            mCallout.setLocation(clickPoint);
+                            mCallout.setContent(calloutContent);
+                            mCallout.show();
                         }
                     }
                 }
@@ -453,11 +468,12 @@ public class MapFragment extends Fragment {
                 xpp.setInput(url.openStream(), null);
 
                 // go through xml file and generate a solar project object for each entry
+                SolarProject d = new SolarProject();
                 while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
                     if (xpp.getEventType() == XmlPullParser.START_TAG) {
-                        SolarProject d = new SolarProject();
                         String s = xpp.getName();
                         if (s.equals("title")) {
+                            d = new SolarProject();
                             d.title = xpp.nextText();
                         } else if (s.equals("description")) {
                             d.des = xpp.nextText();
@@ -474,8 +490,8 @@ public class MapFragment extends Fragment {
                             double lat = Double.valueOf(strings[0]);
                             double lon = Double.valueOf(strings[1]);
                             d.p = new Point(lon, lat, SpatialReferences.getWgs84());
+                            a.add(d);
                         }
-                        a.add(d);
                     } else if (xpp.getEventType() == XmlPullParser.END_TAG) {
 
                     }
@@ -498,6 +514,7 @@ public class MapFragment extends Fragment {
             // display each point on the map
             for (SolarProject s : result) {
                 if (s.p != null) {
+                    System.out.print("Title" + s.title);
                     Graphic graphic = new Graphic(s.p, z);
                     mapMarkersOverlay.getGraphics().add(graphic);
                 }
