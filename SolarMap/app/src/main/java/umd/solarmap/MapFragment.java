@@ -24,6 +24,7 @@ import com.esri.arcgisruntime.datasource.FeatureTable;
 import com.esri.arcgisruntime.datasource.Field;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.geometry.Envelope;
+import com.esri.arcgisruntime.geometry.GeometryEngine;
 import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.geometry.SpatialReferences;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
@@ -50,12 +51,9 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -78,6 +76,9 @@ public class MapFragment extends Fragment {
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
 
+    // Variable to populate the list of solar projects after it is retreived from xml on cleanprojects.org
+    private List<SolarProject> installed_projects;
+
     // Map Layers
     private ArcGISVectorTiledLayer insol_dlh_annovtpk;  // Rooftop solar energy layer
 
@@ -93,6 +94,8 @@ public class MapFragment extends Fragment {
 
     public void onActivityCreated(Bundle savedInstance) {
         super.onActivityCreated(savedInstance);
+
+        installed_projects = new ArrayList<>();
 
         locatorTask = new LocatorTask(getString(R.string.geocode));
         insol_dlh_annovtpk = new ArcGISVectorTiledLayer(getString(R.string.insol_dlh_annovtpk));
@@ -131,7 +134,7 @@ public class MapFragment extends Fragment {
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
                 // remove any existing callouts
-                if(mCallout.isShowing()){
+                if (mCallout.isShowing()) {
                     mCallout.dismiss();
                 }
                 // User click point
@@ -143,6 +146,45 @@ public class MapFragment extends Fragment {
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, mainMap.getSpatialReference());
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
+
+                double wgsTolerance = 0.00005; //guess at tolerance, it would be better to find a less static way of doing this.
+                Point cp = new Point(clickPoint.getX(), clickPoint.getY(), mainMap.getSpatialReference());
+                cp = (Point) GeometryEngine.project(cp, SpatialReferences.getWgs84());
+                for (SolarProject s : installed_projects) {
+                    if (s.p != null) {
+                        Point k = s.p;
+
+                        //check to see if the point touched is close to any of the solar objects
+                        if ((k.getX() < cp.getX() + wgsTolerance && k.getX() > cp.getX() - wgsTolerance) && (k.getY() < cp.getY() + wgsTolerance && k.getY() > cp.getY() - wgsTolerance)) {
+                            // create a TextView to display field values
+
+                            TextView calloutContent = new TextView(getContext());
+
+                            // Sets textView setting
+                            calloutContent.setTextColor(Color.BLACK);
+                            calloutContent.setSingleLine(false);
+                            calloutContent.setVerticalScrollBarEnabled(true);
+                            calloutContent.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
+                            calloutContent.setMovementMethod(new ScrollingMovementMethod());
+
+                            //add each of the elements from the solar project object to the display view
+                            calloutContent.append("Title : " + s.title + "\n");
+                            calloutContent.append("Desc : " + s.des + "\n");
+                            calloutContent.append("Link : " + s.ulink + "\n");
+                            calloutContent.append("Date : " + s.upd + "\n");
+                            calloutContent.append("Wgs84Point : " + "(" + s.p.getX() + "," + s.p.getY() + ")");
+
+                            //display the callout
+                            mCallout.setLocation(clickPoint);
+                            mCallout.setContent(calloutContent);
+                            mCallout.show();
+                            break;
+
+                        }
+                    }
+
+                }
+
                 // Gets feature attributes. Change made HERE, making the select feature call on the service is incorrect.
                 final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
 
@@ -272,7 +314,6 @@ public class MapFragment extends Fragment {
             public void onLongPress(MotionEvent event) {
 
 
-
                 // NOTE: This function need to check if the user touched a marker or just a location
 
                 /*
@@ -290,7 +331,6 @@ public class MapFragment extends Fragment {
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-                System.out.println("X: " + e.getX() + "\nY: "+ e.getY());
                 // get the point that was clicked and convert it to a point in map coordinates
                 Point clickPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
                 int tolerance = 44;
@@ -302,7 +342,7 @@ public class MapFragment extends Fragment {
                 query.setGeometry(envelope);
 
                 // call select features
-                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(0)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
+                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer) mainMap.getOperationalLayers().get(0)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
                 // add done loading listener to fire when the selection returns
                 future.addDoneListener(new Runnable() {
                     @Override
@@ -317,7 +357,7 @@ public class MapFragment extends Fragment {
 
                                 Feature current_building_feature = result.iterator().next();
                                 FeatureTable selected_building_feature_table = current_building_feature.getFeatureTable();
-                                   Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
+                                Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
                                 System.out.println("Building ID: " + current_building_feature.getAttributes().toString());
                                 System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
                                 System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
@@ -330,7 +370,6 @@ public class MapFragment extends Fragment {
                                             " | Field type: " + current_field.getFieldType().toString() +
                                             " | Length: " + current_field.getLength());
                                 }
-
                                 System.out.println("\n\n");
                             }
 
@@ -358,7 +397,7 @@ public class MapFragment extends Fragment {
             // If the current location is detected
             if (currentLocationPoint != null) {
                 // Zoom the map to current location
-                Viewpoint vp  = new Viewpoint(mainMapView.getLocationDisplay().getLocation().getPosition(), 4000.0);
+                Viewpoint vp = new Viewpoint(mainMapView.getLocationDisplay().getLocation().getPosition(), 4000.0);
                 mainMapView.setViewpointAsync(vp);
             } else {
                 Toast.makeText(getContext(), getString(R.string.cantLocateCurrentPosition), Toast.LENGTH_LONG).show();
@@ -439,11 +478,12 @@ public class MapFragment extends Fragment {
                 xpp.setInput(url.openStream(), null);
 
                 // go through xml file and generate a solar project object for each entry
+                SolarProject d = new SolarProject();
                 while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
                     if (xpp.getEventType() == XmlPullParser.START_TAG) {
-                        SolarProject d = new SolarProject();
                         String s = xpp.getName();
                         if (s.equals("title")) {
+                            d = new SolarProject(); //new object being created so open item
                             d.title = xpp.nextText();
                         } else if (s.equals("description")) {
                             d.des = xpp.nextText();
@@ -460,8 +500,8 @@ public class MapFragment extends Fragment {
                             double lat = Double.valueOf(strings[0]);
                             double lon = Double.valueOf(strings[1]);
                             d.p = new Point(lon, lat, SpatialReferences.getWgs84());
+                            a.add(d); //last point that should be added so close off item
                         }
-                        a.add(d);
                     } else if (xpp.getEventType() == XmlPullParser.END_TAG) {
 
                     }
@@ -479,11 +519,18 @@ public class MapFragment extends Fragment {
             // create the symbol to mark on the map
             SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
 
+            installed_projects = result;
+
             // display each point on the map
             for (SolarProject s : result) {
                 if (s.p != null) {
-                    Graphic graphic = new Graphic(s.p, z);
-                    mapMarkersOverlay.getGraphics().add(graphic);
+//                    92.304200
+//                    46.881636
+                    if ((s.p.getY() < 46.881636 && s.p.getY() > 46.648345) && (s.p.getX() < -91.922425 && s.p.getX() > -92.304200)) {
+                        System.out.print("Title" + s.title);
+                        Graphic graphic = new Graphic(s.p, z);
+                        mapMarkersOverlay.getGraphics().add(graphic);
+                    }
                 }
             }
         }
