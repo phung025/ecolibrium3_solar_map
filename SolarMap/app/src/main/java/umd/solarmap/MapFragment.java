@@ -29,6 +29,7 @@ import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.geometry.SpatialReferences;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
+import com.esri.arcgisruntime.layers.Layer;
 import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
@@ -74,7 +75,8 @@ public class MapFragment extends Fragment {
     private ArcGISMap mainMap;
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
-
+    
+    // Variable to populate the list of solar projects after it is retreived from xml on cleanprojects.org
     private List<SolarProject> installed_projects;
 
     // Map Layers
@@ -145,28 +147,34 @@ public class MapFragment extends Fragment {
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
 
-                double wgsTolerance = 0.00001;
+                double wgsTolerance = 0.00001; //guess at tolerance, it would be better to find a less static way of doing this.
                 Point cp = new Point(clickPoint.getX(), clickPoint.getY(), mainMap.getSpatialReference());
                 cp = (Point) GeometryEngine.project(cp, SpatialReferences.getWgs84());
                 for (SolarProject s : installed_projects) {
                     if (s.p != null) {
                         Point k = s.p;
-//                        Point k = (Point) GeometryEngine.project(s.p, mainMap.getSpatialReference());
-//                        System.out.print(k.getX() + "," + k.getY() + " might be in " + cp.getX() + "," + cp.getY() + "\n");
+
+                        //check to see if the point touched is close to any of the solar objects
                         if ((k.getX() < cp.getX()+wgsTolerance && k.getX() > cp.getX()-wgsTolerance) && (k.getY() < cp.getY()+wgsTolerance && k.getY() > cp.getY()-wgsTolerance)) {
                             // create a TextView to display field values
+
                             TextView calloutContent = new TextView(getContext());
+
                             // Sets textView setting
                             calloutContent.setTextColor(Color.BLACK);
                             calloutContent.setSingleLine(false);
                             calloutContent.setVerticalScrollBarEnabled(true);
                             calloutContent.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
                             calloutContent.setMovementMethod(new ScrollingMovementMethod());
+
+                            //add each of the elements from the solar project object to the display view
                             calloutContent.append("Title : " + s.title + "\n");
                             calloutContent.append("Desc : " + s.des + "\n");
                             calloutContent.append("Link : " + s.ulink + "\n");
                             calloutContent.append("Date : " + s.upd + "\n");
                             calloutContent.append("Wgs84Point : " + "(" + s.p.getX() + "," + s.p.getY() + ")");
+
+                            //display the callout
                             mCallout.setLocation(clickPoint);
                             mCallout.setContent(calloutContent);
                             mCallout.show();
@@ -281,10 +289,10 @@ public class MapFragment extends Fragment {
             } else if ((mainMap.getLoadStatus() == LoadStatus.LOADED)) {
 
 
-//                for (Layer layer : mainMap.getOperationalLayers()) {
-//
-//                    System.out.println(layer.getName() + layer.getId());
-//                }
+                for (Layer layer : mainMap.getOperationalLayers()) {
+
+                    System.out.println(layer.getName() + layer.getId());
+                }
 
                 mainMap.getOperationalLayers().set(0, insol_dlh_annovtpk);
             }
@@ -348,19 +356,19 @@ public class MapFragment extends Fragment {
                                 Feature current_building_feature = result.iterator().next();
                                 FeatureTable selected_building_feature_table = current_building_feature.getFeatureTable();
                                    Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
-//                                System.out.println("Building ID: " + current_building_feature.getAttributes().toString());
-//                                System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
-//                                System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
-//                                System.out.println("All fields of this feature table: ");
+                                System.out.println("Building ID: " + current_building_feature.getAttributes().toString());
+                                System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
+                                System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
+                                System.out.println("All fields of this feature table: ");
                                 while (all_fields_of_selected_building.hasNext()) {
                                     Field current_field = all_fields_of_selected_building.next();
-//                                    System.out.println("Name: " + current_field.getName() +
-//                                            " | Alias: " + current_field.getAlias() +
-//                                            " | Domain: " + current_field.getDomain() +
-//                                            " | Field type: " + current_field.getFieldType().toString() +
-//                                            " | Length: " + current_field.getLength());
+                                    System.out.println("Name: " + current_field.getName() +
+                                            " | Alias: " + current_field.getAlias() +
+                                            " | Domain: " + current_field.getDomain() +
+                                            " | Field type: " + current_field.getFieldType().toString() +
+                                            " | Length: " + current_field.getLength());
                                 }
-//                                System.out.println("\n\n");
+                                System.out.println("\n\n");
                             }
 
                         } catch (Exception e) {
@@ -473,7 +481,7 @@ public class MapFragment extends Fragment {
                     if (xpp.getEventType() == XmlPullParser.START_TAG) {
                         String s = xpp.getName();
                         if (s.equals("title")) {
-                            d = new SolarProject();
+                            d = new SolarProject(); //new object being created so open item
                             d.title = xpp.nextText();
                         } else if (s.equals("description")) {
                             d.des = xpp.nextText();
@@ -490,7 +498,7 @@ public class MapFragment extends Fragment {
                             double lat = Double.valueOf(strings[0]);
                             double lon = Double.valueOf(strings[1]);
                             d.p = new Point(lon, lat, SpatialReferences.getWgs84());
-                            a.add(d);
+                            a.add(d); //last point that should be added so close off item
                         }
                     } else if (xpp.getEventType() == XmlPullParser.END_TAG) {
 
