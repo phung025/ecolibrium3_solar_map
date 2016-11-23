@@ -50,6 +50,7 @@ app.post(URIs.URI_SIGN_UP, function (req, res) {
   // 400
   if (!req.body) return res.sendStatus(400);
 
+  try {
   databaseManager.registerAccount(req.body.email, req.body.password, function(isSuccess) {
     if (isSuccess) {
       res.status(200);
@@ -61,6 +62,9 @@ app.post(URIs.URI_SIGN_UP, function (req, res) {
 
     res.send(JSON.stringify({is_registered: isSuccess}));
   });
+} catch (error) {
+  console.log("Unknown error occurred.");
+}
 });
 
 app.get(URIs.URI_LOGIN, function(req, res) {
@@ -69,6 +73,7 @@ app.get(URIs.URI_LOGIN, function(req, res) {
   // 400
   if (!req.params) return res.sendStatus(400);
 
+  try {
   databaseManager.loginAccount(req.params.email, req.params.password, function(isSuccess, authorizationCode) {
     if (isSuccess) {
       res.status(200);
@@ -80,6 +85,9 @@ app.get(URIs.URI_LOGIN, function(req, res) {
 
     res.send(JSON.stringify({account_id: authorizationCode}));
   });
+} catch (error) {
+  console.log("Unknown error occurred.");
+}
 });
 
 /**
@@ -95,6 +103,7 @@ app.delete(URIs.URI_DELETE_ACCOUNT, function(req, res) {
   // 400
   if (!req.body) return res.sendStatus(400);
 
+  try {
   databaseManager.removeAccount(req.body.email, req.body.password, function(isSuccess) {
     if (isSuccess) {
       re.status(200);
@@ -105,6 +114,9 @@ app.delete(URIs.URI_DELETE_ACCOUNT, function(req, res) {
     }
     res.send(JSON.stringify({is_success:isSuccess}));
   });
+} catch (error) {
+  console.log("Unknown error occurred.");
+}
 });
 
 /**
@@ -119,6 +131,8 @@ app.delete(URIs.URI_DELETE_ACCOUNT, function(req, res) {
 app.post(URIs.URI_CHANGE_ACCOUNT_PASSWORD, function(req, res) {
   // If for some reason, the JSON isn't parsed, return a HTTP ERROR
   // 400
+
+  try {
   if (!req.body) return res.sendStatus(400);
 
   databaseManager.changePassword(req.body.email, req.body.current_password, req.body.new_password, function(isSuccess) {
@@ -131,6 +145,9 @@ app.post(URIs.URI_CHANGE_ACCOUNT_PASSWORD, function(req, res) {
     }
     res.send(JSON.stringify({is_success:isSuccess}));
   });
+} catch (error) {
+  console.log("Unknown error occurred.");
+}
 });
 
 //databaseManager.removeAccount("phungle.thanhnam@gmail.com", "password2", function(isSuccess) {});
@@ -155,22 +172,26 @@ app.get(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION, function(req, res) {
   // 400
   if (!req.params) return res.sendStatus(400);
 
+  try {
   //gather data from req
   var account_id = req.params.account_id;
   var email = req.params.email;
   var password = req.params.password;
   var location_id = req.params.location_id;
 
-  databaseManager.getCountInterestInLocation(account_id, email, password, location_id, function(returned_size) {
-    if (returned_size < 0) {
-      res.status((returned_size === -1) ? 404 : 409);
-      console.log(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION + ' GET accessed and rejected');
-    } else {
-      res.status(200);
-      console.log(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION + ' GET accessed and accepted');
-    }
-    res.send(JSON.stringify({result:returned_size}));
-  });
+   databaseManager.getCountInterestInLocation(account_id, email, password, location_id, function(returned_size) {
+     if (returned_size < 0) {
+        res.status((returned_size === -1) ? 404 : 409);
+       console.log(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION + ' GET accessed and rejected');
+     } else {
+       res.status(200);
+       console.log(URIs.URI_GET_COUNT_INTEREST_IN_LOCATION + ' GET accessed and accepted');
+     }
+     res.send(JSON.stringify({result:returned_size}));
+    });
+ } catch (error) {
+  console.log ("Unknown error occurred.");
+ }
 });
 
 /**
@@ -187,22 +208,26 @@ app.post(URIs.URI_SET_LOCATION_INTEREST, function(req, res) {
   // 400
   if (!req.body) return res.sendStatus(400);
 
-  //gather data from req
-  var account_id = req.body.account_id;
-  var email = req.body.email;
-  var password = req.body.password;
-  var location_id = req.body.location_id;
+  try {
+    //gather data from req
+   var account_id = req.body.account_id;
+   var email = req.body.email;
+   var password = req.body.password;
+   var location_id = req.body.location_id;
 
-  databaseManager.setInterestInLocation(account_id, email, password, location_id, function(isSuccess) {
+   databaseManager.setInterestInLocation(account_id, email, password, location_id, function(isSuccess) {
 
-    if (isSuccess) {
-      res.status(200);
-      console.log(URIs.URI_SET_LOCATION_INTEREST + ' POST accessed and accepted');
-    } else {
-      res.status(409);
-      console.log(URIs.URI_SET_LOCATION_INTEREST + ' POST accessed but rejected');
-    }
-  });
+     if (isSuccess) {
+       res.status(200);
+       console.log(URIs.URI_SET_LOCATION_INTEREST + ' POST accessed and accepted');
+     } else {
+       res.status(409);
+       console.log(URIs.URI_SET_LOCATION_INTEREST + ' POST accessed but rejected');
+     }
+   });
+ } catch (error) {
+  console.log("Unknown error occurred.");
+ }
 });
 
 /**
@@ -225,23 +250,27 @@ app.get(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS, function(req, res) {
   // 400
   if (!req.params) return res.sendStatus(400);
 
-  //gather data from req
-  var account_id = req.params.account_id;
-  var email = req.params.email;
-  var password = req.params.password;
-  var available_locations = (req.params.available_locations).split(',');
+  try {
+    //gather data from req
+    var account_id = req.params.account_id;
+    var email = req.params.email;
+    var password = req.params.password;
+    var available_locations = (req.params.available_locations).split(',');
 
-  databaseManager.getListOfInterestLocations(account_id, email, password, available_locations, function(isSuccess, returned_list) {
-    if (isSuccess) {
-      res.status(200);
-      console.log(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS + ' GET accessed and accepted');
-    } else {
-      res.status(409);
-      console.log(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS + ' GET accessed and rejected');
-    }
+    databaseManager.getListOfInterestLocations(account_id, email, password, available_locations, function(isSuccess, returned_list) {
+     if (isSuccess) {
+        res.status(200);
+       console.log(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS + ' GET accessed and accepted');
+     } else {
+       res.status(409);
+       console.log(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS + ' GET accessed and rejected');
+     }
 
-    res.send(JSON.stringify(returned_list));
-  });
+      res.send(JSON.stringify(returned_list));
+    });
+  } catch (error) {
+    console.log("Unknown error occurred.");
+  }
 });
 
 //
