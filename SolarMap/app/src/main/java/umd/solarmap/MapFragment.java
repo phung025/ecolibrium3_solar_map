@@ -147,9 +147,8 @@ public class MapFragment extends Fragment {
                 QueryParameters query = new QueryParameters();
                 query.setGeometry(envelope);
 
-                double wgsTolerance = 0.00005; //guess at tolerance, it would be better to find a less static way of doing this.
-                Point cp = new Point(clickPoint.getX(), clickPoint.getY(), mainMap.getSpatialReference());
-                cp = (Point) GeometryEngine.project(cp, SpatialReferences.getWgs84());
+                double wgsTolerance = 0.000025; //guess at tolerance, it would be better to find a less static way of doing this.
+                final Point cp = (Point) GeometryEngine.project(new Point(clickPoint.getX(), clickPoint.getY(), mainMap.getSpatialReference()), SpatialReferences.getWgs84());
                 for (SolarProject s : installed_projects) {
                     if (s.p != null) {
                         Point k = s.p;
@@ -248,10 +247,21 @@ public class MapFragment extends Fragment {
                                         catch (JSONException E) {
                                             System.out.println("Error: " + E);
                                         }
-                                        // callout display
-                                        mCallout.setLocation(clickPoint);
-                                        mCallout.setContent(calloutContent);
-                                        mCallout.show();
+
+                                        Boolean found = false;
+                                        for (SolarProject s : installed_projects) {
+                                            if (s.p != null) {
+                                                Point k = s.p;
+                                                if ((k.getX() < cp.getX() + wgsTolerance && k.getX() > cp.getX() - wgsTolerance) && (k.getY() < cp.getY() + wgsTolerance && k.getY() > cp.getY() - wgsTolerance)) {
+                                                    found = true;
+                                                }
+                                            }
+                                        }
+                                        if (!found) {
+                                            mCallout.setLocation(clickPoint);
+                                            mCallout.setContent(calloutContent);
+                                            mCallout.show();
+                                        }
                                     }
                                 }).execute("http://services.arcgis.com/8df8p0NlLFEShl0r/ArcGIS/rest/services/foot_dlh_5k/FeatureServer/0/query?where=&objectIds=" + attr.get("OBJECTID") + "&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=standard&distance=&units=esriSRUnit_Meter&outFields=OBJECTID%2CBldg_Name%2CBldg_ID%2C+Parcel%2C+BuildingType%2C+created_user%2Ccreated_date%2Clast_edited_user%2Clast_edited_date%2CBuildingNumber+%2Cfidnum+%2COBJECTID_1+%2COBJECTID_12+%2CVALUE_0+%2CVALUE_1+%2CVALUE_2+%2COBJECTID_12_13+%2COBJECTID_12_13_14+%2CVALUE_01+%2CVALUE_12+%2Csol_700k+%2Csol_1000k+%2Cflat+%2Cflat_pct+&returnGeometry=false&returnCentroid=false&multipatchOption=&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnDistinctValues=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&quantizationParameters=&sqlFormat=standard&f=pjson&token=", "GET");
                             }
@@ -524,9 +534,7 @@ public class MapFragment extends Fragment {
             // display each point on the map
             for (SolarProject s : result) {
                 if (s.p != null) {
-//                    92.304200
-//                    46.881636
-                    if ((s.p.getY() < 46.881636 && s.p.getY() > 46.648345) && (s.p.getX() < -91.922425 && s.p.getX() > -92.304200)) {
+                    if ((s.p.getY() < 46.881636 && s.p.getY() > 46.648345) && (s.p.getX() < -91.922425 && s.p.getX() > -92.304200)) { //Hard coded values for the extent of duluth
                         System.out.print("Title" + s.title);
                         Graphic graphic = new Graphic(s.p, z);
                         mapMarkersOverlay.getGraphics().add(graphic);
