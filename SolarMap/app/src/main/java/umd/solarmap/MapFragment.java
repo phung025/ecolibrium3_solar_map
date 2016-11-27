@@ -295,8 +295,6 @@ public class MapFragment extends Fragment {
 
                 mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
 
-                System.out.println("loooong press");
-
                 android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
                 String[] optionsTitle = {"Share this place", "Save this place"};
                 builder.setTitle("Set Location");
