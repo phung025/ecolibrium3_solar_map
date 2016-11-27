@@ -1,4 +1,4 @@
-package umd.solarmap;
+package umd.solarmap.RestAPI;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 
 /**
  * Created by Nam Phung on 11/13/2016.
@@ -23,6 +24,8 @@ public abstract class HTTPAsyncTask extends AsyncTask<String, Integer, String> {
 
     @Override
     protected String doInBackground(String... params) {
+
+        System.out.println("PARAMS:" + Arrays.toString(params));
 
         HttpURLConnection serverConnection = null;
         InputStream is = null;

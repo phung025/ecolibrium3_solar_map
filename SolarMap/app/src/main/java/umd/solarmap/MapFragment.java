@@ -2,6 +2,7 @@ package umd.solarmap;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -20,8 +21,6 @@ import android.widget.Toast;
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
 import com.esri.arcgisruntime.datasource.Feature;
 import com.esri.arcgisruntime.datasource.FeatureQueryResult;
-import com.esri.arcgisruntime.datasource.FeatureTable;
-import com.esri.arcgisruntime.datasource.Field;
 import com.esri.arcgisruntime.datasource.QueryParameters;
 import com.esri.arcgisruntime.geometry.Envelope;
 import com.esri.arcgisruntime.geometry.GeometryEngine;
@@ -39,6 +38,7 @@ import com.esri.arcgisruntime.mapping.view.Graphic;
 import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
+import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
 import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
@@ -58,6 +58,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import umd.solarmap.AccountManager.SolarAccountManager;
+import umd.solarmap.RestAPI.HTTPAsyncTask;
+
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
  * One difference when creating a Fragment is that you must use the onCreateView() callback to define the layout. In fact, this is the only callback you need in order
@@ -69,7 +72,6 @@ public class MapFragment extends Fragment {
     private MapView mainMapView;
     private EditText searchTextField;
     private FloatingActionButton toCurrentLocationButton;
-    private android.app.AlertDialog locationActionDialog;
 
     // Map Components
     private ArcGISMap mainMap;
@@ -117,7 +119,6 @@ public class MapFragment extends Fragment {
         this.setupMap();
         this.setupTextField();
         this.setupButtons();
-        this.setupOtherComponents();
 
         //sets the base map
         mainMapView.setMap(mainMap);
@@ -128,6 +129,7 @@ public class MapFragment extends Fragment {
         //Sets the callout layout
         Callout.Style style = new Callout.Style(getContext(), R.xml.callout_properties);
         mCallout.setStyle(style);
+
 
         // Listener for selecting a feature.
         mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getContext(), mainMapView) {
@@ -181,7 +183,6 @@ public class MapFragment extends Fragment {
 
                         }
                     }
-
                 }
 
                 // Gets feature attributes. Change made HERE, making the select feature call on the service is incorrect.
@@ -274,6 +275,45 @@ public class MapFragment extends Fragment {
                 });
                 return super.onSingleTapConfirmed(e);
             }
+
+            @Override
+            public void onLongPress(MotionEvent event) {
+
+                // NOTE: This function need to check if the user touched a marker or just a location
+
+
+                // Display the dialog
+                Point markerPoint = (Point) GeometryEngine.project(mainMapView.screenToLocation(new android.graphics.Point(Math.round(event.getX()), Math.round(event.getY()))), SpatialReferences.getWgs84());
+
+                //create a simple marker symbol
+                //int color = Color.rgb(255, 0, 0); //red, fully opaque
+                //SimpleMarkerSymbol marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CIRCLE, color, 9); //size 12, style of circle
+
+                BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.query_location_marker);
+                final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
+                Graphic selectedLocationGraphic = new Graphic(markerPoint, marker);
+
+                mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
+
+                System.out.println("loooong press");
+
+                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+                String[] optionsTitle = {"Share this place", "Save this place"};
+                builder.setTitle("Set Location");
+                builder.setItems(optionsTitle, (dialog, which) -> {
+
+                    final double longitude = markerPoint.getX();
+                    final double latitude = markerPoint.getY();
+
+                    if (which == 0) { // Share location publicly
+                        SolarAccountManager.appAccountManager().shareInterestedLocation("location name", longitude, latitude);
+                    } else { // Save location privately
+                        SolarAccountManager.appAccountManager().saveInterestedLocation("location name", longitude, latitude);
+                    }
+                });
+
+                (builder.create()).show();
+            }
         });
     }
 
@@ -310,89 +350,6 @@ public class MapFragment extends Fragment {
                 mainMap.getOperationalLayers().set(0, insol_dlh_annovtpk);
             }
         });
-
-        // Customer touch event listener class for the map view
-        // Override other touch action events in here if you want to implement
-        // new action
-        class CustomMapViewTouchListener extends DefaultMapViewOnTouchListener {
-
-            public CustomMapViewTouchListener(Context context, MapView mapView) {
-                super(context, mapView);
-            }
-
-            @Override
-            public void onLongPress(MotionEvent event) {
-
-
-                // NOTE: This function need to check if the user touched a marker or just a location
-
-                /*
-                // Display the dialog
-                Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(event.getX()), Math.round(event.getY())));
-                SimpleMarkerSymbol marker = new SimpleMarkerSymbol();
-
-                //final PictureMarkerSymbol marker = new PictureMarkerSymbol(String.valueOf(R.drawable.query_location_marker));
-                Graphic selectedLocationGraphic = new Graphic(clickPoint, marker);
-
-                mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
-                */
-                locationActionDialog.show();
-            }
-
-            @Override
-            public boolean onSingleTapConfirmed(MotionEvent e) {
-                // get the point that was clicked and convert it to a point in map coordinates
-                Point clickPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
-                int tolerance = 44;
-                double mapTolerance = tolerance * mMapView.getUnitsPerPixel();
-
-                // create objects required to do a selection with a query
-                Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, mainMap.getSpatialReference());
-                QueryParameters query = new QueryParameters();
-                query.setGeometry(envelope);
-
-                // call select features
-                final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer) mainMap.getOperationalLayers().get(0)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
-                // add done loading listener to fire when the selection returns
-                future.addDoneListener(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            //call get on the future to get the result
-                            FeatureQueryResult result = future.get();
-
-                            //find out how many items there are in the result
-                            Iterator<Feature> result_iterator = result.iterator();
-                            while (result_iterator.hasNext()) {
-
-                                Feature current_building_feature = result.iterator().next();
-                                FeatureTable selected_building_feature_table = current_building_feature.getFeatureTable();
-                                Iterator<Field> all_fields_of_selected_building = selected_building_feature_table.getFields().iterator();
-                                System.out.println("Building ID: " + current_building_feature.getAttributes().toString());
-                                System.out.println("Table feature name: " + selected_building_feature_table.getTableName());
-                                System.out.println("Total features count: " + selected_building_feature_table.getTotalFeatureCount());
-                                System.out.println("All fields of this feature table: ");
-                                while (all_fields_of_selected_building.hasNext()) {
-                                    Field current_field = all_fields_of_selected_building.next();
-                                    System.out.println("Name: " + current_field.getName() +
-                                            " | Alias: " + current_field.getAlias() +
-                                            " | Domain: " + current_field.getDomain() +
-                                            " | Field type: " + current_field.getFieldType().toString() +
-                                            " | Length: " + current_field.getLength());
-                                }
-                                System.out.println("\n\n");
-                            }
-
-                        } catch (Exception e) {
-                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
-                        }
-                    }
-                });
-                return super.onSingleTapConfirmed(e);
-            }
-
-        }
-        mainMapView.setOnTouchListener(new CustomMapViewTouchListener(getContext(), mainMapView));
     }
 
     private void setupButtons() {
@@ -455,21 +412,6 @@ public class MapFragment extends Fragment {
             }
             return false;
         });
-    }
-
-    /**
-     * Setup other components beside buttons & text fields
-     */
-    private void setupOtherComponents() {
-
-        // Setup the dialog for asking user to share or save location
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-        String[] optionsTitle = {"Share this place", "Save this place"};
-        builder.setTitle("Set Location");
-        builder.setItems(optionsTitle, (dialog, which) -> {
-
-        });
-        this.locationActionDialog = builder.create();
     }
 
     //reaches out to an xml file by its url and parses it as a georss feed, takes in a url
@@ -539,6 +481,8 @@ public class MapFragment extends Fragment {
                         Graphic graphic = new Graphic(s.p, z);
                         mapMarkersOverlay.getGraphics().add(graphic);
                     }
+                } else {
+                    installed_projects.remove(s);
                 }
             }
         }

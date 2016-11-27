@@ -3,7 +3,12 @@ package umd.solarmap;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.design.widget.NavigationView;
@@ -14,7 +19,12 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
-import android.view.ViewGroup;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import umd.solarmap.AccountManager.SolarAccountManager;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -26,12 +36,23 @@ public class MainActivity extends AppCompatActivity
     private static final int MAP_FRAGMENT_ID = R.id.nav_map;
     private static final int SAVED_LOCATION_FRAGMENT_ID = R.id.nav_saved_locations;
 
+    // Drawer components
+    private NavigationView navigationView = null;
+
     // Drawer fragments
     private final MapFragment mapFragment = new MapFragment();
+
+
+    private static int RESULT_LOAD_IMG = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Switch to login activity if user's not logged in, this will later be moved to onStart()
+        //Intent intent = new Intent(this, StartupLoginActivity.class);
+        //startActivity(intent);
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -44,6 +65,10 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        this.navigationView = navigationView;
+
+        // Setup all components in the header view
+        setupHeader();
 
         // Ask for user LOCATION permission
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
@@ -59,10 +84,6 @@ public class MainActivity extends AppCompatActivity
 
         // Default startup fragment
         this.switchFragment(MAP_FRAGMENT_ID);
-
-        // Switch to login activity if user's not logged in, this will later be moved to onStart()
-        Intent intent = new Intent(this, StartupLoginActivity.class);
-        startActivity(intent);
     }
 
     @Override
@@ -112,5 +133,30 @@ public class MainActivity extends AppCompatActivity
 
         // Highlight selected row
         ((NavigationView) findViewById(R.id.nav_view)).getMenu().getItem(FRAGMENT_ID % MAP_FRAGMENT_ID).setChecked(true);
+    }
+
+    /**
+     * Setup the components for the drawer header view
+     */
+    private void setupHeader() {
+
+        // Get the header view of the drawer
+        View headerView = navigationView.getHeaderView(0);
+
+        // Avatar image view
+        ImageView avatarView = (ImageView) headerView.findViewById(R.id.avatarView);
+        avatarView.setOnTouchListener((view, motionEvent)->{
+
+            return true;
+        });
+
+        // Change the text view to display account's email address
+        TextView account_email_address = (TextView) headerView.findViewById(R.id.userName);
+        try {
+            account_email_address.setText(SolarAccountManager.appAccountManager().getEmail().toString());
+        } catch (IllegalAccessException e) {
+            account_email_address.setText("");
+            e.printStackTrace();
+        }
     }
 }

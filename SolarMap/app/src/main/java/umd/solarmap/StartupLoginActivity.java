@@ -1,13 +1,17 @@
 package umd.solarmap;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import umd.solarmap.AccountManager.SolarAccountManager;
 
 
 /**
@@ -30,36 +34,31 @@ public class StartupLoginActivity extends AppCompatActivity {
         mPasswordView = (EditText) findViewById(R.id.password_field);
         mSignInButton = (Button) findViewById(R.id.sign_in_button);
         mSignUpButton = (Button) findViewById(R.id.sign_up_button);
-
     }
 
     public void onTouchSignInButton(View view) {
-        finish();
+
+        // Both text fields must not be empty
+        String email_address = mEmailView.getText().toString();
+        String password = mPasswordView.getText().toString();
+
+        if(SolarAccountManager.appAccountManager().login(email_address, password)) {
+
+            // Start the main activity
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+        } else {
+
+        }
     }
 
     public void onTouchSignUpButton(View view) {
 
         // Both text fields must not be empty
+        String email_address = mEmailView.getText().toString();
+        String password = mPasswordView.getText().toString();
 
-        try {
-            String email_address = mEmailView.getText().toString();
-            String password = mPasswordView.getText().toString();
-
-            JSONObject signUpInfo = new JSONObject();
-            signUpInfo.put("email", email_address);
-            signUpInfo.put("password", password);
-
-            HTTPAsyncTask jsonResponse ;
-            (jsonResponse = new HTTPAsyncTask() {
-                @Override
-                protected void onPostExecute(String result) {
-                    System.out.println(result);
-                }
-            }).execute("http://10.0.2.2:4321/registerAccount", "POST", signUpInfo.toString());
-
-        } catch (JSONException jsonException) {
-            jsonException.printStackTrace();
-        }
+        SolarAccountManager.appAccountManager().registerAccount(email_address, password);
     }
 }
 
