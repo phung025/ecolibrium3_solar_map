@@ -1,0 +1,10 @@
+*.iml
+.gradle
+SolarMap/local.properties
+SolarMap/.idea/workspace.xml
+SolarMap/.idea/libraries
+.DS_Store
+SolarMap/build
+/captures
+.externalNativeBuild
+NodeServer/node_modules/*
