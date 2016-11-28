@@ -233,17 +233,20 @@ public class MapFragment extends Fragment {
                                             Object OptimalData = attributes.get("VALUE_2");
                                             Object ModerateData = attributes.get("VALUE_1");
 
+
+//                                            The rooftop of this building has 24.00 square meters of optimal suitability and 63.00 square meters of moderately suitable area.
+
                                             if (OptimalData != null) {
-                                                calloutContent.append("Optimal Solar Rating: " + OptimalData.toString() + "\n");
+                                                calloutContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
                                             }
                                             else
-                                                calloutContent.append("Optimal Solar Rating: N/A\n");
+                                                calloutContent.append("Optimal Solar Area: N/A\n");
 
                                             if (ModerateData != null) {
-                                                calloutContent.append("Moderate Solar Rating: " + ModerateData.toString());
+                                                calloutContent.append(ModerateData.toString() + " square meters of optimal suitability" + "\n");
                                             }
                                             else
-                                                calloutContent.append("Moderate Solar Rating: N/A");
+                                                calloutContent.append("Moderate Solar Area: N/A");
                                         }
                                         catch (JSONException E) {
                                             System.out.println("Error: " + E);
