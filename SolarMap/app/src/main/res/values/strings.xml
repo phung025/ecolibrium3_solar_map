@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">SolarMap</string>
 
+    <!--map contraints for duluth given in wgs84 coordinates-->
+    <string name="YMax">46.881636</string>
+    <string name="YMin">46.648345</string>
+    <string name="XMin">-91.922425</string>
+    <string name="XMax">-92.304200</string>
+
     <string name="geocode">http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer</string>
 
     <!-- Minnesota solar energy image layer -->

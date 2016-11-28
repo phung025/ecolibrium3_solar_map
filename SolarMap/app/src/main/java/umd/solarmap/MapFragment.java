@@ -233,9 +233,6 @@ public class MapFragment extends Fragment {
                                             Object OptimalData = attributes.get("VALUE_2");
                                             Object ModerateData = attributes.get("VALUE_1");
 
-
-//                                            The rooftop of this building has 24.00 square meters of optimal suitability and 63.00 square meters of moderately suitable area.
-
                                             if (OptimalData != null) {
                                                 calloutContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
                                             }
@@ -243,7 +240,7 @@ public class MapFragment extends Fragment {
                                                 calloutContent.append("Optimal Solar Area: N/A\n");
 
                                             if (ModerateData != null) {
-                                                calloutContent.append(ModerateData.toString() + " square meters of optimal suitability" + "\n");
+                                                calloutContent.append(ModerateData.toString() + " square meters of moderate suitability" + "\n");
                                             }
                                             else
                                                 calloutContent.append("Moderate Solar Area: N/A");
@@ -477,7 +474,13 @@ public class MapFragment extends Fragment {
             // display each point on the map
             for (SolarProject s : result) {
                 if (s.p != null) {
-                    if ((s.p.getY() < 46.881636 && s.p.getY() > 46.648345) && (s.p.getX() < -91.922425 && s.p.getX() > -92.304200)) { //Hard coded values for the extent of duluth
+
+//                    <float name="YMax">46.881636</float>
+//                    <float name="YMin">46.648345</float>
+//                    <float name="XMin">-91.922425</float>
+//                    <float name="XMax">-92.304200</float>
+
+                    if ((s.p.getY() < Float.valueOf(getString(R.string.YMax)) && s.p.getY() > Float.valueOf(getString(R.string.YMin))) && (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() >  Float.valueOf(getString(R.string.XMax)))) { //Hard coded values for the extent of duluth
                         System.out.print("Title" + s.title);
                         Graphic graphic = new Graphic(s.p, z);
                         mapMarkersOverlay.getGraphics().add(graphic);
