@@ -24,13 +24,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.esri.arcgisruntime.mapping.Viewpoint;
+
 import umd.solarmap.AccountManager.SolarAccountManager;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     /**
-     * Instace fields
+     * Instance fields
      */
     private static final int LOCATION_PERMISSION_CODE = 1;
     private static final int MAP_FRAGMENT_ID = R.id.nav_map;
@@ -41,7 +43,10 @@ public class MainActivity extends AppCompatActivity
 
     // Drawer fragments
     private final MapFragment mapFragment = new MapFragment();
+    private final SavedLocationsFragment savedLocationsFragment = new SavedLocationsFragment();
 
+    //bundle for mapfragment mapView location
+    private Bundle locationBundle;
 
     private static int RESULT_LOAD_IMG = 1;
 
@@ -83,6 +88,12 @@ public class MainActivity extends AppCompatActivity
         }
 
         // Default startup fragment
+        locationBundle = new Bundle();
+        locationBundle.putDouble("longitude", 46.7867);
+        locationBundle.putDouble("latitude", -92.1005);
+        locationBundle.putDouble("zoom", 72223.819286);
+
+
         this.switchFragment(MAP_FRAGMENT_ID);
     }
 
@@ -105,7 +116,7 @@ public class MainActivity extends AppCompatActivity
         if (id == MAP_FRAGMENT_ID) {
             this.switchFragment(MAP_FRAGMENT_ID);
         } else if (id == SAVED_LOCATION_FRAGMENT_ID) {
-
+            this.switchFragment(SAVED_LOCATION_FRAGMENT_ID);
         } else if (id == R.id.nav_achievements) {
 
         } else if (id == R.id.nav_settings) {
@@ -128,8 +139,19 @@ public class MainActivity extends AppCompatActivity
         // Insert the fragment by replacing any existing fragment
         FragmentManager fragmentManager = getSupportFragmentManager();
 
-        // Switch to the map fragment
-        fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
+        switch (FRAGMENT_ID){
+            default:
+            case MAP_FRAGMENT_ID:
+                // Switch to the map fragment
+                mapFragment.setArguments(locationBundle);
+                fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
+                break;
+            case SAVED_LOCATION_FRAGMENT_ID:
+                // Switch to the saved locations fragment
+                fragmentManager.beginTransaction().replace(R.id.content_main, savedLocationsFragment).commit();
+                break;
+        }
+
 
         // Highlight selected row
         ((NavigationView) findViewById(R.id.nav_view)).getMenu().getItem(FRAGMENT_ID % MAP_FRAGMENT_ID).setChecked(true);
@@ -158,5 +180,27 @@ public class MainActivity extends AppCompatActivity
             account_email_address.setText("");
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Fragment switch called from saved location fragment; gives map fragment a location to go to
+     * immediately
+     */
+    public void savedLocationFragmentSwitch(double longitude, double latitude, double zoom){
+
+        // Insert the fragment by replacing the current fragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        // Switch back to the map fragment
+        fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
+
+        // set new location for map
+        locationBundle = new Bundle();
+        locationBundle.putDouble("longitude", longitude);
+        locationBundle.putDouble("latitude", latitude);
+        locationBundle.putDouble("zoom", zoom);
+
+        //Set the map's viewpoint location
+        switchFragment(MAP_FRAGMENT_ID);
     }
 }

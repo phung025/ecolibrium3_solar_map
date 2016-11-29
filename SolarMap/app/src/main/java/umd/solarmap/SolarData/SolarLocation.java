@@ -3,8 +3,8 @@ package umd.solarmap.SolarData;
 /**
  * Created by phung025 on 11/15/16.
  * Author: Nam Phung
- * This class represents the solar location that users saved/shared on the map. It contains
- * some attributes such as location ID, location name, longitude, latitude
+ * This class represents the solar location that users have saved/shared on the map. It contains
+ * some attributes such as location ID, location name, longitude, and latitude
  */
 public class SolarLocation {
 
@@ -18,7 +18,7 @@ public class SolarLocation {
 
     // We want the default constructor to be private and this class should only
     // be instantiated using the parameterized constructor
-    private SolarLocation(){};
+    private SolarLocation(){}
 
     public SolarLocation(String locationID, String locationName, double longitude, double latitude) {
         location_id = locationID;

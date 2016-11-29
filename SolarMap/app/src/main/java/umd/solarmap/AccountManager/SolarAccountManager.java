@@ -54,7 +54,7 @@ public class SolarAccountManager implements Serializable {
     List<SolarLocation> sharedLocationList; // Global locations list shared by all users
 
     /**
-     * Defaul constructor. Declared as private in order to use singleton pattern
+     * Default constructor. Declared as private in order to use singleton pattern
      */
     private SolarAccountManager() {
 
@@ -203,7 +203,7 @@ public class SolarAccountManager implements Serializable {
 
     /**
      * Set the password of the app's account. This function should only be called when the user successfully
-     * sign up or login the app
+     * signs up or logs into the app
      * @param password
      * @return
      */

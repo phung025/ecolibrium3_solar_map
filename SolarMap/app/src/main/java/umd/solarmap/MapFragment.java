@@ -78,7 +78,7 @@ public class MapFragment extends Fragment {
     private LocatorTask locatorTask;
     private GeocodeParameters geocodeParams;
 
-    // Variable to populate the list of solar projects after it is retreived from xml on cleanprojects.org
+    // Variable to populate the list of solar projects after it is retrieved from xml on cleanprojects.org
     private List<SolarProject> installed_projects;
 
     // Map Layers
@@ -113,7 +113,10 @@ public class MapFragment extends Fragment {
         mainMapView.getGraphicsOverlays().add(mapMarkersOverlay); // Add the overlay for displaying markers to the map
 
         // Setting initial view point of the map
-        Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
+        Bundle myBundle = this.getArguments();
+        Viewpoint vp = new Viewpoint(myBundle.getDouble("longitude",46.7867),
+                myBundle.getDouble("latitude",-92.1005),
+                myBundle.getDouble("zoom",72223.819286));
         (mainMap = new ArcGISMap(getString(R.string.solar_potential_map_2))).setInitialViewpoint(vp);
 
         this.setupMap();
@@ -315,9 +318,9 @@ public class MapFragment extends Fragment {
         });
     }
 
-
+    // Set a listener that will be called when the MapView is initialized.
     private void setupMap() {
-        // Set a listener that will be called when the MapView is initialized.
+
         // Check if the map is ready for a user to make queries.
         //region mainMapView.OnStatusChangedListener()
 
@@ -350,11 +353,10 @@ public class MapFragment extends Fragment {
         });
     }
 
+    /**
+     * Action when clicking go to current location button
+     */
     private void setupButtons() {
-
-        /**
-         * Action when clicking go to current location button
-         */
         //region onClickedToCurrentLocationButton()
         toCurrentLocationButton.setOnClickListener(view -> {
             Point currentLocationPoint = mainMapView.getLocationDisplay().getLocation().getPosition();
@@ -491,4 +493,11 @@ public class MapFragment extends Fragment {
             }
         }
     }
+
+
+//    //Setting up a method to set the location, using in saved locations fragment
+//    public void setMainMapViewViewpoint (Viewpoint vp){
+//        System.out.println("new vp: " + vp.toString() + "\n");
+//        mainMapView.setViewpointAsync(vp);
+//    }
 }
