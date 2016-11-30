@@ -475,12 +475,8 @@ public class MapFragment extends Fragment {
             for (SolarProject s : result) {
                 if (s.p != null) {
 
-//                    <float name="YMax">46.881636</float>
-//                    <float name="YMin">46.648345</float>
-//                    <float name="XMin">-91.922425</float>
-//                    <float name="XMax">-92.304200</float>
-
-                    if ((s.p.getY() < Float.valueOf(getString(R.string.YMax)) && s.p.getY() > Float.valueOf(getString(R.string.YMin))) && (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() >  Float.valueOf(getString(R.string.XMax)))) { //Hard coded values for the extent of duluth
+                    if ((s.p.getY() < Float.valueOf(getString(R.string.YMax)) && s.p.getY() > Float.valueOf(getString(R.string.YMin))) &&
+                            (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() >  Float.valueOf(getString(R.string.XMax)))) {
                         System.out.print("Title" + s.title);
                         Graphic graphic = new Graphic(s.p, z);
                         mapMarkersOverlay.getGraphics().add(graphic);
