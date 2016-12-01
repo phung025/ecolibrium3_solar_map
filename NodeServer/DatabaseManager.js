@@ -197,7 +197,7 @@ module.exports = function DatabaseManager() {
   };
 
   /**
-   * 
+   *
    *
    *
    */
@@ -255,8 +255,8 @@ module.exports = function DatabaseManager() {
    * @param authorization_ID: <String> - private ID of the account
    * @param email_address: <String> - email address of the account
    * @param password: <String> - password of the account
-   * @param available_locations: <[location_id: <String>]> - array of type string
-   *        with all available locations id that the client has
+   * @param available_locations: [{location_ID: <String>, interest_count: <int>}] - array of JSONObject
+   *        with all available locations id & vote that the client has
    * @param completionFN - callback function when the query is finish
    */
   this.getListOfInterestLocations = function(authorization_ID, email_address, password, available_locations, completionFN) {
@@ -264,8 +264,19 @@ module.exports = function DatabaseManager() {
       isAuthorized(authorization_ID, email_address, password, function(isAllowed){
 
         if (isAllowed) {
+
+          var filter = {
+            $or: [
+              {location_ID:{$ne:available_locations.location_ID}},
+              {$and: [
+                {locationID:available_locations.locationID},
+                {total_users_interested:{$ne:available_locations.interest_count}},
+              ]}
+            ]
+          };
+
           // Find all locations that are not in the list
-          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).find({location_ID:{$nin:available_locations}}).toArray().then(function(docs) {
+          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).find(filter).toArray().then(function(docs) {
 
             // Map the array to new array containing only needed data. i.e. total people showing interest & location id
             var returned_list = docs.map(function(element) {
