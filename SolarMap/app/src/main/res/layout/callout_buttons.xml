@@ -20,21 +20,21 @@
 
         <Button
             android:text="@string/ignore"
-            android:layout_width="120dp"
+            android:layout_width="105dp"
             android:layout_height="wrap_content"
             android:id="@+id/Ignore"
             android:onClick="clear"/>
 
         <Button
             android:text="@string/saveLocation"
-            android:layout_width="120dp"
+            android:layout_width="105dp"
             android:layout_height="wrap_content"
             android:id="@+id/saveLocation"
             android:onClick="SaveLocation"/>
 
         <Button
             android:text="@string/moreInfo"
-            android:layout_width="120dp"
+            android:layout_width="105dp"
             android:layout_height="wrap_content"
             android:id="@+id/moreInfo"
             android:onClick="moreInfo" />

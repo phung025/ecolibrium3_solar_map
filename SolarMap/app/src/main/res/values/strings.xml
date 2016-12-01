@@ -48,8 +48,8 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="title_activity_startup_login">Sign in</string>
 
-    <!-- Strings related to callout buttons -->
-    <string name="moreInfo">Information</string>
+    <!-- Strings related to dialog buttons -->
+    <string name="moreInfo">More Info</string>
     <string name="saveLocation">Save</string>
     <string name="ignore">Ignore</string>
     <string name="rooftopInfo">Rooftop Information</string>
