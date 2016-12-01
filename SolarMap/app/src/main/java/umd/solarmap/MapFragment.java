@@ -145,7 +145,7 @@ public class MapFragment extends Fragment {
                 // User click point
                 final Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
                 // Map tolerance
-                int tolerance = 10;
+                double tolerance = 0.0000025;
                 double mapTolerance = tolerance * mainMapView.getUnitsPerPixel();
                 // Query envelope
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, mainMap.getSpatialReference());

@@ -41,7 +41,9 @@
             android:name=".PopupDialog"
             android:theme="@android:style/Theme.Holo.Dialog">
         </activity>
-
+        <activity
+            android:name=".WebViewActivity">
+        </activity>
     </application>
 
 </manifest>

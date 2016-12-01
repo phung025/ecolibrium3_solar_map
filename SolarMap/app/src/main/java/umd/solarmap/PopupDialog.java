@@ -33,7 +33,9 @@ public class PopupDialog extends Activity {
     }
 
     public void moreInfo(View view) {
-        //Open Web Page
+        Intent intent = new Intent(this, WebViewActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     public void clear(View view) {

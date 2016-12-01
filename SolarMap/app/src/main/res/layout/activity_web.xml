@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <WebView
+        android:id="@+id/webview"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_gravity="center">
+    </WebView>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true">
+
+        <Button
+            android:background="@color/colorPrimaryDark"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:id="@+id/backButtonId"
+            android:layout_gravity="bottom"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:text="@string/backButtonWebpage"
+            android:onClick="goBack"/>
+
+        <Button
+            android:background="@color/colorPrimaryDark"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:id="@+id/reloadButtonId"
+            android:layout_gravity="bottom"
+            android:layout_alignParentBottom="true"
+            android:layout_toEndOf="@+id/backButtonId"
+            android:text="@string/reloadWebpage"
+            android:onClick="reloadPage"/>
+
+    </RelativeLayout>
+
+
+</RelativeLayout>
