@@ -8,12 +8,14 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 /**
- * Activity responsible for displaying the web page containing the calculator.
+ * Activity responsible for displaying the web page containing the calculator. Web page URL is what
+ * determines the calculation variables within the displayed webpage.
  * Created by John on 12/1/2016.
  */
 
 public class WebViewActivity extends Activity {
 
+    //Private variables
     WebView webView;
     String opt, mod, flat;
 
@@ -24,13 +26,16 @@ public class WebViewActivity extends Activity {
 
         Intent intent = getIntent();
         Bundle b = intent.getExtras();
-        opt = b.get("optimalRating").toString();
-        mod = b.get("moderateRating").toString();
-        flat = b.get("flat_pct").toString();
+
+        //This data originates from MapFragment.java and is sent to this class using intents.
+        opt = b.get("optimalRating").toString(); //Optimal Solar Rating
+        mod = b.get("moderateRating").toString(); //Moderate Solar Rating
+        flat = b.get("flat_pct").toString(); //Flat value percentage
 
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
 
+        //URL is changed accordingly based on what rooftop is selected.
         webView.loadUrl("http://umd-cla-gis04.d.umn.edu/DuluthSolar/docs/solarcalc.html?primeval="
                 + opt + "&goodval=" + mod + "&flatval=" + flat);
     }

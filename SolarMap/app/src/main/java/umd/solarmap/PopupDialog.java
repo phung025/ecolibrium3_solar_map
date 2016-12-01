@@ -8,12 +8,15 @@ import android.widget.TextView;
 
 /**
  * Displays a dialog containing information about rooftop features and also provides options to the
- * user such as saving the location, getting more info about the rooftop, or ignoring the dialog.
+ * user such as saving the location, getting more info about the rooftop, or ignoring the dialog. Note
+ * that this class is technically an activity that is merely behaving as a dialog, therefore it is never
+ * instantiated in MapFragment.java.
  * Created by John on 11/30/2016.
  */
 
 public class PopupDialog extends Activity {
 
+    //Private variables
     private TextView information;
     private String data, optimalInfo, moderateInfo, flatVal;
 
@@ -24,6 +27,7 @@ public class PopupDialog extends Activity {
         information = (TextView) findViewById(R.id.dialogText);
         Intent intent = getIntent();
         Bundle b = intent.getExtras();
+
         data = b.get("Data").toString();
         optimalInfo = b.get("Optimal").toString();
         moderateInfo = b.get("Moderate").toString();
@@ -32,10 +36,19 @@ public class PopupDialog extends Activity {
         information.setText(data);
     }
 
+    /**
+     * Gets the data associated with the currently selected feature and saves that data if the user
+     * clicks 'Save'.
+     * @param view xml
+     */
     public void SaveLocation(View view) {
         //Save Location
     }
 
+    /**
+     * Invokes the web page activity via a button on the dialog if the user clicks 'Info'.
+     * @param view xml
+     */
     public void moreInfo(View view) {
         Intent intent = new Intent(this, WebViewActivity.class);
         intent.putExtra("optimalRating", optimalInfo);
@@ -45,6 +58,10 @@ public class PopupDialog extends Activity {
         finish();
     }
 
+    /**
+     * Ends the activity if user clicks 'Ignore'.
+     * @param view xml
+     */
     public void clear(View view) {
         finish();
     }
