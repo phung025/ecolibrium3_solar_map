@@ -1,6 +1,5 @@
 package umd.solarmap;
 
-import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -8,7 +7,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -34,10 +32,7 @@ import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.layers.Layer;
 import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
-import com.esri.arcgisruntime.mapping.GeoElement;
 import com.esri.arcgisruntime.mapping.Viewpoint;
-import com.esri.arcgisruntime.mapping.popup.Popup;
-import com.esri.arcgisruntime.mapping.popup.PopupDefinition;
 import com.esri.arcgisruntime.mapping.view.Callout;
 import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
 import com.esri.arcgisruntime.mapping.view.Graphic;
@@ -97,9 +92,6 @@ public class MapFragment extends Fragment {
     // Callout to display rooftop information
     private Callout mCallout;
 
-    //Popup to display rooftop information
-    private PopupDialog mDialog;
-
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_map, container, false);
@@ -137,9 +129,6 @@ public class MapFragment extends Fragment {
 
         //Gets the callout
         mCallout = mainMapView.getCallout();
-
-        //Dialog to disply rooftop information
-        mDialog = new PopupDialog();
 
         //Sets the callout layout
         Callout.Style style = new Callout.Style(getContext(), R.xml.callout_properties);
@@ -207,6 +196,11 @@ public class MapFragment extends Fragment {
                         // Result
                         FeatureQueryResult result = future.get();
 
+                        TextView dialogContent = new TextView(getActivity());
+
+                        dialogContent.setTextColor(Color.BLACK);
+                        dialogContent.setSingleLine(false);
+
                         Iterator<Feature> iterator = result.iterator();
                         // create a TextView to display field values
 
@@ -218,7 +212,7 @@ public class MapFragment extends Fragment {
                             Set<String> keys = attr.keySet();
                             for(String key:keys){
                                 Object value = attr.get(key);
-                                mDialog.setText(key + ": " + value + "\n");
+                                dialogContent.append(key + ": " + value + "\n");
                             }
 
                             (new HTTPAsyncTask() {
@@ -238,16 +232,16 @@ public class MapFragment extends Fragment {
                                         Object ModerateData = attributes.get("VALUE_1");
 
                                         if (OptimalData != null) {
-                                            mDialog.setText(OptimalData.toString() + " square meters of optimal suitability" + "\n");
+                                            dialogContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
                                         }
                                         else
-                                            mDialog.setText("Optimal Solar Area: N/A\n");
+                                            dialogContent.append("Optimal Solar Area: N/A\n");
 
                                         if (ModerateData != null) {
-                                            mDialog.setText(ModerateData.toString() + " square meters of moderate suitability" + "\n");
+                                            dialogContent.append(ModerateData.toString() + " square meters of moderate suitability" + "\n");
                                         }
                                         else
-                                            mDialog.setText("Moderate Solar Area: N/A");
+                                            dialogContent.append("Moderate Solar Area: N/A");
                                     }
                                     catch (JSONException E) {
                                         System.out.println("Error: " + E);
@@ -264,6 +258,7 @@ public class MapFragment extends Fragment {
                                     }
                                     if (!found) {
                                         Intent intent = new Intent(getContext(), PopupDialog.class);
+                                        intent.putExtra("Data", dialogContent.getText());
                                         startActivity(intent);
                                     }
                                 }
