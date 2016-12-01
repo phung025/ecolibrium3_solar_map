@@ -196,6 +196,7 @@ public class MapFragment extends Fragment {
                         // Result
                         FeatureQueryResult result = future.get();
 
+                        Intent intent = new Intent(getContext(), PopupDialog.class);
                         TextView dialogContent = new TextView(getActivity());
 
                         dialogContent.setTextColor(Color.BLACK);
@@ -239,6 +240,11 @@ public class MapFragment extends Fragment {
                                         JSONObject attributes = (JSONObject) attributesData.get("attributes");
                                         Object OptimalData = attributes.get("VALUE_2");
                                         Object ModerateData = attributes.get("VALUE_1");
+                                        Object FlatValue = attributes.get("flat_pct");
+
+                                        intent.putExtra("Optimal", OptimalData.toString());
+                                        intent.putExtra("Moderate", ModerateData.toString());
+                                        intent.putExtra("Flat", FlatValue.toString());
 
                                         if (OptimalData != null) {
                                             dialogContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
@@ -266,7 +272,6 @@ public class MapFragment extends Fragment {
                                         }
                                     }
                                     if (!found) {
-                                        Intent intent = new Intent(getContext(), PopupDialog.class);
                                         intent.putExtra("Data", dialogContent.getText());
                                         startActivity(intent);
                                     }

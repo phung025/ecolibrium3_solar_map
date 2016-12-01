@@ -15,7 +15,7 @@ import android.widget.TextView;
 public class PopupDialog extends Activity {
 
     private TextView information;
-    private String data;
+    private String data, optimalInfo, moderateInfo, flatVal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,6 +25,10 @@ public class PopupDialog extends Activity {
         Intent intent = getIntent();
         Bundle b = intent.getExtras();
         data = b.get("Data").toString();
+        optimalInfo = b.get("Optimal").toString();
+        moderateInfo = b.get("Moderate").toString();
+        flatVal = b.get("Flat").toString();
+
         information.setText(data);
     }
 
@@ -34,6 +38,9 @@ public class PopupDialog extends Activity {
 
     public void moreInfo(View view) {
         Intent intent = new Intent(this, WebViewActivity.class);
+        intent.putExtra("optimalRating", optimalInfo);
+        intent.putExtra("moderateRating", moderateInfo);
+        intent.putExtra("flat_pct", flatVal);
         startActivity(intent);
         finish();
     }

@@ -33,10 +33,11 @@
             android:layout_height="50dp"
             android:id="@+id/reloadButtonId"
             android:layout_gravity="bottom"
+            android:text="@string/reloadWebpage"
+            android:onClick="reloadPage"
             android:layout_alignParentBottom="true"
             android:layout_toEndOf="@+id/backButtonId"
-            android:text="@string/reloadWebpage"
-            android:onClick="reloadPage"/>
+            android:layout_marginStart="11dp" />
 
     </RelativeLayout>
 
