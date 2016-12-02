@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 /**
@@ -32,8 +31,14 @@ public class WebViewActivity extends Activity {
         mod = b.get("moderateRating").toString(); //Moderate Solar Rating
         flat = b.get("flat_pct").toString(); //Flat value percentage
 
-        WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
+
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setLoadWithOverviewMode(true);
+        webView.getSettings().setUseWideViewPort(true);
+        webView.getSettings().setSupportZoom(true);
+        webView.getSettings().setDisplayZoomControls(true);
+        webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+        webView.setScrollbarFadingEnabled(false);
 
         //URL is changed accordingly based on what rooftop is selected.
         webView.loadUrl("http://umd-cla-gis04.d.umn.edu/DuluthSolar/docs/solarcalc.html?primeval="
