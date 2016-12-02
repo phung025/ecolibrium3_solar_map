@@ -39,7 +39,6 @@ import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
-import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
@@ -467,8 +466,8 @@ public class MapFragment extends Fragment {
         // add the graphic to the map
         protected void onPostExecute(List<SolarProject> result) {
             // create the symbol to mark on the map
-            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
-
+            BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.star_marker);
+            final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
             installed_projects = result;
 
             // display each point on the map
@@ -478,7 +477,7 @@ public class MapFragment extends Fragment {
                     if ((s.p.getY() < Float.valueOf(getString(R.string.YMax)) && s.p.getY() > Float.valueOf(getString(R.string.YMin))) &&
                             (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() >  Float.valueOf(getString(R.string.XMax)))) {
                         System.out.print("Title" + s.title);
-                        Graphic graphic = new Graphic(s.p, z);
+                        Graphic graphic = new Graphic(s.p, marker);
                         mapMarkersOverlay.getGraphics().add(graphic);
                     }
                 } else {
