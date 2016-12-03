@@ -264,19 +264,23 @@ module.exports = function DatabaseManager() {
       isAuthorized(authorization_ID, email_address, password, function(isAllowed){
 
         if (isAllowed) {
-
+/*
           var filter = {
             $or: [
-              {location_ID:{$ne:available_locations.location_ID}},
+              {location_ID:{$nin:available_locations.map(function(element){return element.location_ID;})}},
               {$and: [
-                {locationID:available_locations.locationID},
-                {total_users_interested:{$ne:available_locations.interest_count}},
+                {locationID:{$in:available_locations.map(function(element){return element.location_ID;})}},
+                {total_users_interested:{$ne:available_locations.find(function checkCount(element) {
+                    return element.locationID
+                })
+              }
+            },
               ]}
             ]
           };
-
+*/
           // Find all locations that are not in the list
-          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).find(filter).toArray().then(function(docs) {
+          db.collection(COLLECTIONS.COLLECTION_PUBLIC_LOCATIONS).find({}).toArray().then(function(docs) {
 
             // Map the array to new array containing only needed data. i.e. total people showing interest & location id
             var returned_list = docs.map(function(element) {
@@ -286,6 +290,20 @@ module.exports = function DatabaseManager() {
               };
               return mappedJSONData;
             });
+
+            // Remove unecessary items
+            // Remove from the end of the array to prevent screwing up the element index
+            for (i = returned_list.length-1 ; i >= 0  ; --i) {
+              for (j = 0 ; j < available_locations.length ; ++j) {
+
+                if ((returned_list[i].location_id === available_locations[j].location_ID) &&
+                (returned_list[i].interest_count === available_locations[j].interest_count)) {
+                  // Remove 1 item starting from index i
+                  returned_list.splice(i, 1);
+                }
+              }
+            }
+
             // Return true if successful and the list containing all needed locations
             completionFN(true, returned_list);
           });

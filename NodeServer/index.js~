@@ -1,4 +1,4 @@
-const SERVER_PORT = 2058;
+const SERVER_PORT = 4321;
 
 // All URIs
 var URIs = {
@@ -8,7 +8,7 @@ var URIs = {
   URI_CHANGE_ACCOUNT_PASSWORD: "/API/changeAccountPassword",
   URI_GET_ACHIEVEMENTS: "/API/getAchievements",
   URI_SET_LOCATION_INTEREST: "/API/setInterestInLocation",
-  URI_GET_LIST_OF_INTEREST_LOCATIONS: "/API/getListOfInterestLocations",
+  URI_GET_LIST_OF_INTEREST_LOCATIONS: "/API/getListOfInterestLocations/:account_id/:email/:password/:json_available_locations",
   URI_GET_COUNT_INTEREST_IN_LOCATION: "/API/getCountInterestInLocation/:account_id/:email/:password/:location_id"
 };
 
@@ -243,18 +243,18 @@ app.post(URIs.URI_SET_LOCATION_INTEREST, function(req, res) {
  * @return [{location_id: <String>, interest_count: <int>}] - Stringified JSONArray
  *         containing all locations that the client does not have
  */
-app.post(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS, function(req, res) {
+app.get(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS, function(req, res) {
 
   // If for some reason, the JSON isn't parsed, return a HTTP ERROR
   // 400
-  if (!req.body) return res.sendStatus(400);
+  if (!req.params) return res.sendStatus(400);
 
   try {
     //gather data from req
-    var account_id = req.body.account_id;
-    var email = req.body.email;
-    var password = req.body.password;
-    var available_locations = req.body.available_locations;
+    var account_id = req.params.account_id;
+    var email = req.params.email;
+    var password = req.params.password;
+    var available_locations = JSON.parse(req.params.available_locations);
 
     databaseManager.getListOfInterestLocations(account_id, email, password, available_locations, function(isSuccess, returned_list) {
       if (isSuccess) {
@@ -265,7 +265,7 @@ app.post(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS, function(req, res) {
         console.log(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS + ' GET accessed and rejected');
       }
 
-      res.send(JSON.stringify({location_list:JSON.stringify(returned_list)}));
+      res.send(JSON.stringify(returned_list));
     });
   } catch(error) {
     console.log("Unknown error occurred");
