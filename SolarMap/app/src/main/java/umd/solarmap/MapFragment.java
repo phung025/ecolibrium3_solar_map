@@ -1,6 +1,7 @@
 package umd.solarmap;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
@@ -46,6 +47,7 @@ import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
@@ -86,6 +88,7 @@ public class MapFragment extends Fragment {
     // Map's graphic overlay for putting markers
     private GraphicsOverlay mapMarkersOverlay;
 
+    // Callout to display rooftop information
     private Callout mCallout;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -115,6 +118,7 @@ public class MapFragment extends Fragment {
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
         (mainMap = new ArcGISMap(getString(R.string.solar_potential_map_2))).setInitialViewpoint(vp);
 
+
         this.setupMap();
         this.setupTextField();
         this.setupButtons();
@@ -129,7 +133,6 @@ public class MapFragment extends Fragment {
         Callout.Style style = new Callout.Style(getContext(), R.xml.callout_properties);
         mCallout.setStyle(style);
 
-
         // Listener for selecting a feature.
         mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getContext(), mainMapView) {
             @Override
@@ -141,7 +144,7 @@ public class MapFragment extends Fragment {
                 // User click point
                 final Point clickPoint = mainMapView.screenToLocation(new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY())));
                 // Map tolerance
-                int tolerance = 10;
+                double tolerance = 0.0000025;
                 double mapTolerance = tolerance * mainMapView.getUnitsPerPixel();
                 // Query envelope
                 Envelope envelope = new Envelope(clickPoint.getX() - mapTolerance, clickPoint.getY() - mapTolerance, clickPoint.getX() + mapTolerance, clickPoint.getY() + mapTolerance, mainMap.getSpatialReference());
@@ -187,129 +190,100 @@ public class MapFragment extends Fragment {
                 // Gets feature attributes. Change made HERE, making the select feature call on the service is incorrect.
                 final ListenableFuture<FeatureQueryResult> future = ((FeatureLayer)mainMap.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
 
-                future.addDoneListener(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            // Result
-                            FeatureQueryResult result = future.get();
+                future.addDoneListener(() -> {
+                    try {
+                        // Result
+                        FeatureQueryResult result = future.get();
 
-                            //JSON object to be able to parse out the data
+                        Intent intent = new Intent(getContext(), PopupDialog.class);
+                        TextView dialogContent = new TextView(getActivity());
 
-                            Iterator<Feature> iterator = result.iterator();
-                            // create a TextView to display field values
-                            TextView calloutContent = new TextView(getContext());
-                            // Sets textView setting
-                            calloutContent.setTextColor(Color.BLACK);
-                            calloutContent.setSingleLine(false);
-                            calloutContent.setVerticalScrollBarEnabled(true);
-                            calloutContent.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
-                            calloutContent.setMovementMethod(new ScrollingMovementMethod());
+                        dialogContent.setTextColor(Color.BLACK);
+                        dialogContent.setSingleLine(false);
 
-                            int counter = 0;
-                            while (iterator.hasNext()){
-                                Feature feature = iterator.next();
-                                // create a Map of all available attributes as name value pairs
-                                Map<String, Object> attr = feature.getAttributes();
-                                Set<String> keys = attr.keySet();
-                                for(String key:keys){
-                                    Object value = attr.get(key);
-                                    calloutContent.append(key + ": " + value + "\n");
+                        Iterator<Feature> iterator = result.iterator();
+                        // create a TextView to display field values
+
+                        while (iterator.hasNext()) {
+                            Feature feature = iterator.next();
+
+                            // create a Map of all available attributes as name value pairs
+                            Map<String, Object> attr = feature.getAttributes();
+                            Set<String> keys = attr.keySet();
+
+                            // Get object ID for setting interest
+                            Object objectID = null;
+
+                            for (String key : keys) {
+                                Object value = (attr.get(key) == null) ? "N/A" : attr.get(key);
+                                if (key.equals("Bldg_Name"))
+                                    key = "Building Name";
+                                else if (key.equals("OBJECTID")) {
+                                    key = "Object ID";
+                                    objectID = value;
                                 }
-
-                                (new HTTPAsyncTask() {
-                                    @Override
-                                    protected void onPostExecute(String result) {
-
-                                        // center the mapview on selected feature
-                                        Envelope envelope = feature.getGeometry().getExtent();
-                                        mainMapView.setViewpointGeometryWithPaddingAsync(envelope, 200);
-                                        try {
-                                            JSONObject data = new JSONObject(result);
-                                            JSONArray arrayData = data.getJSONArray("features");
-                                            JSONObject attributesData = new JSONObject(String.valueOf(arrayData.get(0)));
-                                            JSONObject attributes = (JSONObject) attributesData.get("attributes");
-                                            Object OptimalData = attributes.get("VALUE_2");
-                                            Object ModerateData = attributes.get("VALUE_1");
-
-                                            if (OptimalData != null) {
-                                                calloutContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
-                                            }
-                                            else
-                                                calloutContent.append("Optimal Solar Area: N/A\n");
-
-                                            if (ModerateData != null) {
-                                                calloutContent.append(ModerateData.toString() + " square meters of moderate suitability" + "\n");
-                                            }
-                                            else
-                                                calloutContent.append("Moderate Solar Area: N/A");
-                                        }
-                                        catch (JSONException E) {
-                                            System.out.println("Error: " + E);
-                                        }
-
-                                        Boolean found = false;
-                                        for (SolarProject s : installed_projects) {
-                                            if (s.p != null) {
-                                                Point k = s.p;
-                                                if ((k.getX() < cp.getX() + wgsTolerance && k.getX() > cp.getX() - wgsTolerance) && (k.getY() < cp.getY() + wgsTolerance && k.getY() > cp.getY() - wgsTolerance)) {
-                                                    found = true;
-                                                }
-                                            }
-                                        }
-                                        if (!found) {
-                                            mCallout.setLocation(clickPoint);
-                                            mCallout.setContent(calloutContent);
-                                            mCallout.show();
-                                        }
-                                    }
-                                }).execute("http://services.arcgis.com/8df8p0NlLFEShl0r/ArcGIS/rest/services/foot_dlh_5k/FeatureServer/0/query?where=&objectIds=" + attr.get("OBJECTID") + "&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=standard&distance=&units=esriSRUnit_Meter&outFields=OBJECTID%2CBldg_Name%2CBldg_ID%2C+Parcel%2C+BuildingType%2C+created_user%2Ccreated_date%2Clast_edited_user%2Clast_edited_date%2CBuildingNumber+%2Cfidnum+%2COBJECTID_1+%2COBJECTID_12+%2CVALUE_0+%2CVALUE_1+%2CVALUE_2+%2COBJECTID_12_13+%2COBJECTID_12_13_14+%2CVALUE_01+%2CVALUE_12+%2Csol_700k+%2Csol_1000k+%2Cflat+%2Cflat_pct+&returnGeometry=false&returnCentroid=false&multipatchOption=&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnDistinctValues=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&quantizationParameters=&sqlFormat=standard&f=pjson&token=", "GET");
+                                dialogContent.append(key + ": " + value + "\n");
                             }
 
+                            Object finalObjectID = objectID;
+                            (new HTTPAsyncTask() {
+                                @Override
+                                protected void onPostExecute(String result) {
 
-                        } catch (Exception e) {
-                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                                    // center the mapview on selected feature
+                                    Envelope envelope1 = feature.getGeometry().getExtent();
+
+                                    mainMapView.setViewpointGeometryWithPaddingAsync(envelope1, 200);
+                                    try {
+                                        JSONObject data = new JSONObject(result);
+                                        JSONArray arrayData = data.getJSONArray("features");
+                                        JSONObject attributesData = new JSONObject(String.valueOf(arrayData.get(0)));
+                                        JSONObject attributes = (JSONObject) attributesData.get("attributes");
+                                        Object OptimalData = attributes.get("VALUE_2");
+                                        Object ModerateData = attributes.get("VALUE_1");
+                                        Object FlatValue = attributes.get("flat_pct");
+
+                                        intent.putExtra("ObjectID", String.valueOf(finalObjectID));
+                                        intent.putExtra("Optimal", OptimalData.toString());
+                                        intent.putExtra("Moderate", ModerateData.toString());
+                                        intent.putExtra("Flat", FlatValue.toString());
+
+                                        if (OptimalData != null) {
+                                            dialogContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
+                                        }
+                                        else
+                                            dialogContent.append("Optimal Solar Area: N/A\n");
+
+                                        if (ModerateData != null) {
+                                            dialogContent.append(ModerateData.toString() + " square meters of moderate suitability" + "\n");
+                                        }
+                                        else
+                                            dialogContent.append("Moderate Solar Area: N/A");
+                                    } catch (JSONException E) {
+                                        System.out.println("Error: " + E);
+                                    }
+
+                                    Boolean found = false;
+                                    for (SolarProject s : installed_projects) {
+                                        if (s.p != null) {
+                                            Point k = s.p;
+                                            if ((k.getX() < cp.getX() + wgsTolerance && k.getX() > cp.getX() - wgsTolerance) && (k.getY() < cp.getY() + wgsTolerance && k.getY() > cp.getY() - wgsTolerance)) {
+                                                found = true;
+                                            }
+                                        }
+                                    }
+                                    if (!found) {
+                                        intent.putExtra("Data", dialogContent.getText());
+                                        startActivity(intent);
+                                    }
+                                }
+                            }).execute("http://services.arcgis.com/8df8p0NlLFEShl0r/ArcGIS/rest/services/foot_dlh_5k/FeatureServer/0/query?where=&objectIds=" + attr.get("OBJECTID") + "&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=standard&distance=&units=esriSRUnit_Meter&outFields=OBJECTID%2CBldg_Name%2CBldg_ID%2C+Parcel%2C+BuildingType%2C+created_user%2Ccreated_date%2Clast_edited_user%2Clast_edited_date%2CBuildingNumber+%2Cfidnum+%2COBJECTID_1+%2COBJECTID_12+%2CVALUE_0+%2CVALUE_1+%2CVALUE_2+%2COBJECTID_12_13+%2COBJECTID_12_13_14+%2CVALUE_01+%2CVALUE_12+%2Csol_700k+%2Csol_1000k+%2Cflat+%2Cflat_pct+&returnGeometry=false&returnCentroid=false&multipatchOption=&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnDistinctValues=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&quantizationParameters=&sqlFormat=standard&f=pjson&token=", "GET");
                         }
+                    } catch (Exception e1) {
+                        Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e1.getMessage());
                     }
                 });
                 return super.onSingleTapConfirmed(e);
-            }
-
-            @Override
-            public void onLongPress(MotionEvent event) {
-
-                // NOTE: This function need to check if the user touched a marker or just a location
-
-
-                // Display the dialog
-                Point markerPoint = (Point) GeometryEngine.project(mainMapView.screenToLocation(new android.graphics.Point(Math.round(event.getX()), Math.round(event.getY()))), SpatialReferences.getWgs84());
-
-                //create a simple marker symbol
-                //int color = Color.rgb(255, 0, 0); //red, fully opaque
-                //SimpleMarkerSymbol marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CIRCLE, color, 9); //size 12, style of circle
-
-                BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.query_location_marker);
-                final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
-                Graphic selectedLocationGraphic = new Graphic(markerPoint, marker);
-
-                mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
-
-                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-                String[] optionsTitle = {"Share this place", "Save this place"};
-                builder.setTitle("Set Location");
-                builder.setItems(optionsTitle, (dialog, which) -> {
-
-                    final double longitude = markerPoint.getX();
-                    final double latitude = markerPoint.getY();
-
-                    if (which == 0) { // Share location publicly
-                        SolarAccountManager.appAccountManager().shareInterestedLocation("location name", longitude, latitude);
-                    } else { // Save location privately
-                        SolarAccountManager.appAccountManager().saveInterestedLocation("location name", longitude, latitude);
-                    }
-                });
-
-                (builder.create()).show();
             }
         });
     }

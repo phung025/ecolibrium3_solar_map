@@ -1,18 +1,27 @@
 package umd.solarmap.AccountManager;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+
+import javax.security.auth.callback.Callback;
 
 import umd.solarmap.RestAPI.HTTPAsyncTask;
 import umd.solarmap.RestAPI.HTTPMethods;
 import umd.solarmap.SolarData.SolarAchievement;
 import umd.solarmap.SolarData.SolarLocation;
+import umd.solarmap.UtilitiesClasses.CallbackFunction;
 
 /**
  * Author: Nam Phung
@@ -28,17 +37,19 @@ public class SolarAccountManager implements Serializable {
 
     // URI Links
     private class URIs {
-        public static final String ACCOUNT_LOGIN = "/API/loginAccount";
-        public static final String ACCOUNT_SIGN_UP = "/API/registerAccount";
-        public static final String ACCOUNT_SAVE_LOCATION = "/API/addPrivateLocation";
-        public static final String ACCOUNT_SHARE_LOCATION = "/API/addPublicLocation";
-        public static final String ACCOUNT_LOAD_PRIVATE_LOCATION = "/API/getPrivateLocation";
-        public static final String ACCOUNT_LOAD_PUBLIC_LOCATION = "/API/getPublicLocation";
+        public static final String URI_ACCOUNT_LOGIN = "/API/loginAccount";
+        public static final String URI_ACCOUNT_SIGN_UP = "/API/registerAccount";
+        public static final String URI_DELETE_ACCOUNT = "/API/deleteAccount";
+        public static final String URI_CHANGE_ACCOUNT_PASSWORD = "/API/changeAccountPassword";
+        public static final String URI_GET_ACHIEVEMENTS = "/API/getAchievements";
+        public static final String URI_SET_LOCATION_INTEREST = "/API/setInterestInLocation";
+        public static final String URI_GET_LIST_OF_INTEREST_LOCATIONS = "/API/getListOfInterestLocations";
+        public static final String URI_GET_COUNT_INTEREST_IN_LOCATION = "/API/getCountInterestInLocation";
     }
 
     // Server connection info
     private static final int CONNECTION_PORT = 2058;
-    private static final String URL = "https://lempo.d.umn.edu";
+    private static final String URL = "http://192.168.1.99";//"https://lempo.d.umn.edu";
     //10.0.2.2
     // Account login status
     public static boolean LOGIN_STATUS = false;
@@ -50,8 +61,7 @@ public class SolarAccountManager implements Serializable {
 
     // User's account data
     List<SolarAchievement> solarAchievementList; // User's achievements list
-    List<SolarLocation> userPrivateLocationList; // User's private interested location
-    List<SolarLocation> sharedLocationList; // Global locations list shared by all users
+    Map<String, Integer> sharedLocationList; // Global locations list shared by all users
 
     /**
      * Defaul constructor. Declared as private in order to use singleton pattern
@@ -60,8 +70,7 @@ public class SolarAccountManager implements Serializable {
 
         // Set up all initial components of this class
         solarAchievementList = new LinkedList<SolarAchievement>();
-        userPrivateLocationList = new LinkedList<SolarLocation>();
-        sharedLocationList = new LinkedList<SolarLocation>();
+        sharedLocationList = new HashMap<>();
 
         // Sign in the account if the information is already stored on the device
     }
@@ -133,7 +142,7 @@ public class SolarAccountManager implements Serializable {
             String result = (new HTTPAsyncTask() {
                 @Override
                 protected void onPostExecute(String result) {}
-            }).execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? (URIs.ACCOUNT_LOGIN + "/" + email_address + "/" + input_password) : URIs.ACCOUNT_SIGN_UP),
+            }).execute(URL((action == ACCOUNT_ACTION.LOG_IN) ? (URIs.URI_ACCOUNT_LOGIN + "/" + email_address + "/" + input_password) : URIs.URI_ACCOUNT_SIGN_UP),
                     (action == ACCOUNT_ACTION.LOG_IN) ? HTTPMethods.GET : HTTPMethods.POST,
                     (action == ACCOUNT_ACTION.LOG_IN) ? "" : jsonData.toString()).get();
 
@@ -145,7 +154,7 @@ public class SolarAccountManager implements Serializable {
                 if (!accountID.equals("")) {
 
                     // Set email & password if successfully sign in
-                    account_private_id = result;
+                    account_private_id = String.valueOf(jsonResponse.get("account_id"));
                     setEmail(email_address);
                     setPassword(input_password);
 
@@ -241,59 +250,94 @@ public class SolarAccountManager implements Serializable {
         return account_private_id;
     }
 
-    // Actions for saving or sharing the locations. This enumeration is used only in save location and share location methods
-    private enum INTERESTED_LOCATION_ACTION {
-        SAVE,
-        SHARE
-    }
+    public void shareInterestInLocation(String locationID, Callback callbackFunction) {
 
-    public boolean saveInterestedLocation(String locationName, double longitude, double latitude) {
-        return interestedLocationHelper(INTERESTED_LOCATION_ACTION.SAVE,
-                locationName,
-                longitude,
-                latitude);
-    }
-
-    public boolean shareInterestedLocation(String locationName, double longitude, double latitude) {
-        return interestedLocationHelper(INTERESTED_LOCATION_ACTION.SHARE,
-                locationName,
-                longitude,
-                latitude);
-    }
-
-    private boolean interestedLocationHelper(INTERESTED_LOCATION_ACTION action, String locationName, double longitude, double latitude) {
-        final boolean[] success = {false};
-
-        JSONObject geoPoint = new JSONObject();
+        JSONObject jsonRequest = new JSONObject();
 
         try {
-            geoPoint.put("account_id", account_private_id);
-            geoPoint.put("location_id", String.valueOf(UUID.randomUUID()));
-            geoPoint.put("location_name", locationName);
-            geoPoint.put("location_longitude", longitude);
-            geoPoint.put("location_latitude", latitude);
+            jsonRequest.put("account_id", account_private_id);
+            jsonRequest.put("email", account_email);
+            jsonRequest.put("password", account_password);
+            jsonRequest.put("location_id", locationID);
 
             (new HTTPAsyncTask() {
                 @Override
                 protected void onPostExecute(String result) {
 
+                    try {
+                        JSONObject jsonResult = new JSONObject(result);
 
-                    success[0] = true;
+                        // Update the list if there's anything changed
+                        updateListOfInterestedLocation(callbackFunction);
+
+                        // Display dialog showing whether the operation is successful
+                        System.out.println(jsonResult.get("is_success").toString().equals("true") ? "Successfully set interest" : "Failed to set interest");
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
                 }
-            }).execute(URL((action == INTERESTED_LOCATION_ACTION.SAVE) ? URIs.ACCOUNT_SAVE_LOCATION : URIs.ACCOUNT_SHARE_LOCATION), HTTPMethods.POST, geoPoint.toString());
+            }).execute(URL(URIs.URI_SET_LOCATION_INTEREST), HTTPMethods.POST, jsonRequest.toString());
 
         } catch (JSONException exception) {
             exception.printStackTrace();
         }
+    }
 
-        // If successfully save/share location, add it to the local list
-        if (success[0] && (action == INTERESTED_LOCATION_ACTION.SAVE)) {
+    /**
+     * Get the list of public locations. This function will update the list before returning it. Because of that,
+     * user need to pass in a callback function. Once it finish updating the list, it will be return through the callback function
+     * @param callbackFunction
+     */
+    public void getListOfInterestedLocation(Callback callbackFunction) {
+        updateListOfInterestedLocation(callbackFunction);
+    }
 
-        } else if (success[0] && (action == INTERESTED_LOCATION_ACTION.SHARE)) {
+    private void updateListOfInterestedLocation(Callback callbackFunction) {
 
+        try {
+            JSONArray availableLocations = new JSONArray();
+            for (Map.Entry<String, Integer> entry : sharedLocationList.entrySet()) {
+                availableLocations.put(new JSONObject().put("location_ID", entry.getKey()).put("interest_count", entry.getValue()));
+            }
+
+            JSONObject request = new JSONObject();
+            request.put("account_id", account_private_id);
+            request.put("email", account_email);
+            request.put("password", account_password);
+            request.put("available_locations", availableLocations);
+
+            (new HTTPAsyncTask() {
+                @Override
+                protected void onPostExecute(String result) {
+                    try {
+                        JSONArray returnedList = new JSONArray(String.valueOf((new JSONObject(result).get("location_list"))));
+                        for (int i = 0; i < returnedList.length(); ++i) {
+                            JSONObject arrayElement = (JSONObject) returnedList.get(i);
+                            String location_id = String.valueOf(arrayElement.get("location_id"));
+                            Integer interest_count = Integer.parseInt(String.valueOf(arrayElement.get("interest_count")));
+
+                            // If interest count is 0, remove the location id from the map
+                            if (interest_count.intValue() == 0) {
+                                sharedLocationList.remove(location_id);
+                            } else {
+                                sharedLocationList.put(location_id, interest_count);
+                            }
+                        }
+
+                        // Execute callback once the update process is finish
+                        ((CallbackFunction)callbackFunction).setResult(sharedLocationList);
+                        ((CallbackFunction)callbackFunction).onPostExecute();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).execute(URL(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS), HTTPMethods.POST, request.toString());
+
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
-
-        return success[0];
     }
 
     /****************************

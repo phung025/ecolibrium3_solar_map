@@ -48,6 +48,15 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="title_activity_startup_login">Sign in</string>
 
+    <!-- Strings related to dialog buttons -->
+    <string name="moreInfo">More Info</string>
+    <string name="shareInterest">Show interest!</string>
+    <string name="ignore">Ignore</string>
+
+    <!-- Strings for web view -->
+    <string name="reloadWebpage">Reload</string>
+    <string name="backButtonWebpage">Go Back</string>
+
     <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>

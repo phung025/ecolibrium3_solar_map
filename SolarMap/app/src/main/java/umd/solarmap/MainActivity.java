@@ -46,8 +46,8 @@ public class MainActivity extends AppCompatActivity
     private static int RESULT_LOAD_IMG = 1;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
 
         // Switch to login activity if user's not logged in, this will later be moved to onStart()
         //Intent intent = new Intent(this, StartupLoginActivity.class);
