@@ -49,7 +49,7 @@ public class SolarAccountManager implements Serializable {
 
     // Server connection info
     private static final int CONNECTION_PORT = 2058;
-    private static final String URL = "http://192.168.1.99";//"https://lempo.d.umn.edu";
+    private static final String URL = "https://lempo.d.umn.edu";
     //10.0.2.2
     // Account login status
     public static boolean LOGIN_STATUS = false;
