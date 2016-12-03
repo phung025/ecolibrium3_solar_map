@@ -50,7 +50,7 @@ public class PopupDialog extends Activity {
     public void showInterest(View view) {
 
         //Share interest in having solar panel installed on the building
-        SolarAccountManager.appAccountManager().shareInterestedInLocation(objectID, new CallbackFunction() {
+        SolarAccountManager.appAccountManager().shareInterestInLocation(objectID, new CallbackFunction() {
             @Override
             public void onPostExecute() {
                 HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();

@@ -250,7 +250,7 @@ public class SolarAccountManager implements Serializable {
         return account_private_id;
     }
 
-    public void shareInterestedInLocation(String locationID, Callback callbackFunction) {
+    public void shareInterestInLocation(String locationID, Callback callbackFunction) {
 
         JSONObject jsonRequest = new JSONObject();
 
@@ -315,8 +315,8 @@ public class SolarAccountManager implements Serializable {
                         JSONArray returnedList = new JSONArray(String.valueOf((new JSONObject(result).get("location_list"))));
                         for (int i = 0; i < returnedList.length(); ++i) {
                             JSONObject arrayElement = (JSONObject) returnedList.get(i);
-                            String location_id = String.valueOf(arrayElement.get("location_id");
-                            Integer interest_count = Integer.parseInt(String.valueOf(arrayElement.get("interest_count"))));
+                            String location_id = String.valueOf(arrayElement.get("location_id"));
+                            Integer interest_count = Integer.parseInt(String.valueOf(arrayElement.get("interest_count")));
 
                             // If interest count is 0, remove the location id from the map
                             if (interest_count.intValue() == 0) {
