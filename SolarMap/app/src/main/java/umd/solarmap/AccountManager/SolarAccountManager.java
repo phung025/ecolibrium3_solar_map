@@ -315,13 +315,16 @@ public class SolarAccountManager implements Serializable {
                         JSONArray returnedList = new JSONArray(String.valueOf((new JSONObject(result).get("location_list"))));
                         for (int i = 0; i < returnedList.length(); ++i) {
                             JSONObject arrayElement = (JSONObject) returnedList.get(i);
-                            sharedLocationList.put(String.valueOf(arrayElement.get("location_id")),
-                                    Integer.parseInt(String.valueOf(arrayElement.get("interest_count"))));
+                            String location_id = String.valueOf(arrayElement.get("location_id");
+                            Integer interest_count = Integer.parseInt(String.valueOf(arrayElement.get("interest_count"))));
 
-                            System.out.println("ID: " + String.valueOf(arrayElement.get("location_id")));
+                            // If interest count is 0, remove the location id from the map
+                            if (interest_count.intValue() == 0) {
+                                sharedLocationList.remove(location_id);
+                            } else {
+                                sharedLocationList.put(location_id, interest_count);
+                            }
                         }
-
-                        System.out.println("RETURNED LIST SIZE: " + returnedList.length());
 
                         // Execute callback once the update process is finish
                         ((CallbackFunction)callbackFunction).setResult(sharedLocationList);
