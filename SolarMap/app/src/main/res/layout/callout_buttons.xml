@@ -26,11 +26,11 @@
             android:onClick="clear"/>
 
         <Button
-            android:text="@string/saveLocation"
+            android:text="@string/shareInterest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/saveLocation"
-            android:onClick="SaveLocation"/>
+            android:id="@+id/showInterest"
+            android:onClick="showInterest"/>
 
         <Button
             android:text="@string/moreInfo"

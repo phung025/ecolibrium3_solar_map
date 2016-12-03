@@ -6,6 +6,11 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
+import java.util.HashMap;
+
+import umd.solarmap.AccountManager.SolarAccountManager;
+import umd.solarmap.UtilitiesClasses.CallbackFunction;
+
 /**
  * Displays a dialog containing information about rooftop features and also provides options to the
  * user such as saving the location, getting more info about the rooftop, or ignoring the dialog. Note
@@ -18,7 +23,7 @@ public class PopupDialog extends Activity {
 
     //Private variables
     private TextView information;
-    private String data, optimalInfo, moderateInfo, flatVal;
+    private String data, optimalInfo, moderateInfo, flatVal, objectID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +37,7 @@ public class PopupDialog extends Activity {
         optimalInfo = b.get("Optimal").toString();
         moderateInfo = b.get("Moderate").toString();
         flatVal = b.get("Flat").toString();
+        objectID = b.get("ObjectID").toString();
 
         information.setText(data);
     }
@@ -41,8 +47,16 @@ public class PopupDialog extends Activity {
      * clicks 'Save'.
      * @param view xml
      */
-    public void SaveLocation(View view) {
-        //Save Location
+    public void showInterest(View view) {
+
+        //Share interest in having solar panel installed on the building
+        SolarAccountManager.appAccountManager().shareInterestedInLocation(objectID, new CallbackFunction() {
+            @Override
+            public void onPostExecute() {
+                HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
+                System.out.println(public_location_map.toString());
+            }
+        });
     }
 
     /**

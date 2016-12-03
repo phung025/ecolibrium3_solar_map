@@ -15,7 +15,7 @@ public abstract class CallbackFunction implements Callback {
     }
 
     public Object getResult() {
-        return null;
+        return result;
     }
 
     public abstract void onPostExecute();

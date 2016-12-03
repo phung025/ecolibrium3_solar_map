@@ -207,24 +207,26 @@ public class MapFragment extends Fragment {
 
                         while (iterator.hasNext()) {
                             Feature feature = iterator.next();
-                            // create a Map of all available attributes as name value pairs
 
+                            // create a Map of all available attributes as name value pairs
                             Map<String, Object> attr = feature.getAttributes();
                             Set<String> keys = attr.keySet();
-                            for(String key:keys){
-                                Object value = attr.get(key);
 
+                            // Get object ID for setting interest
+                            Object objectID = null;
+
+                            for (String key : keys) {
+                                Object value = (attr.get(key) == null) ? "N/A" : attr.get(key);
                                 if (key.equals("Bldg_Name"))
                                     key = "Building Name";
-                                else if (key.equals("OBJECTID"))
+                                else if (key.equals("OBJECTID")) {
                                     key = "Object ID";
-
-
-                                if (value == null)
-                                    value = "N/A";
+                                    objectID = value;
+                                }
                                 dialogContent.append(key + ": " + value + "\n");
                             }
 
+                            Object finalObjectID = objectID;
                             (new HTTPAsyncTask() {
                                 @Override
                                 protected void onPostExecute(String result) {
@@ -242,6 +244,7 @@ public class MapFragment extends Fragment {
                                         Object ModerateData = attributes.get("VALUE_1");
                                         Object FlatValue = attributes.get("flat_pct");
 
+                                        intent.putExtra("ObjectID", String.valueOf(finalObjectID));
                                         intent.putExtra("Optimal", OptimalData.toString());
                                         intent.putExtra("Moderate", ModerateData.toString());
                                         intent.putExtra("Flat", FlatValue.toString());
@@ -257,8 +260,7 @@ public class MapFragment extends Fragment {
                                         }
                                         else
                                             dialogContent.append("Moderate Solar Area: N/A");
-                                    }
-                                    catch (JSONException E) {
+                                    } catch (JSONException E) {
                                         System.out.println("Error: " + E);
                                     }
 
@@ -283,42 +285,6 @@ public class MapFragment extends Fragment {
                     }
                 });
                 return super.onSingleTapConfirmed(e);
-            }
-
-            @Override
-            public void onLongPress(MotionEvent event) {
-
-                // NOTE: This function need to check if the user touched a marker or just a location
-
-
-                // Display the dialog
-                Point markerPoint = (Point) GeometryEngine.project(mainMapView.screenToLocation(new android.graphics.Point(Math.round(event.getX()), Math.round(event.getY()))), SpatialReferences.getWgs84());
-
-                //create a simple marker symbol
-                //int color = Color.rgb(255, 0, 0); //red, fully opaque
-                //SimpleMarkerSymbol marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CIRCLE, color, 9); //size 12, style of circle
-
-                BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.query_location_marker);
-                final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
-                Graphic selectedLocationGraphic = new Graphic(markerPoint, marker);
-
-                mapMarkersOverlay.getGraphics().add(selectedLocationGraphic);
-
-                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-                String[] optionsTitle = {"Share this place", "Save this place"};
-                builder.setTitle("Set Location");
-                builder.setItems(optionsTitle, (dialog, which) -> {
-
-                    final double longitude = markerPoint.getX();
-                    final double latitude = markerPoint.getY();
-
-                    if (which == 0) { // Share location publicly
-                        SolarAccountManager.appAccountManager().shareInterestedLocation("location name", longitude, latitude);
-                    } else { // Save location privately
-                        SolarAccountManager.appAccountManager().saveInterestedLocation("location name", longitude, latitude);
-                    }
-                });
-                (builder.create()).show();
             }
         });
     }

@@ -50,7 +50,7 @@
 
     <!-- Strings related to dialog buttons -->
     <string name="moreInfo">More Info</string>
-    <string name="saveLocation">Save</string>
+    <string name="shareInterest">Show interest!</string>
     <string name="ignore">Ignore</string>
 
     <!-- Strings for web view -->

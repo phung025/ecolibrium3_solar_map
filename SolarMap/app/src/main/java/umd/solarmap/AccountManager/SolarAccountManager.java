@@ -43,13 +43,13 @@ public class SolarAccountManager implements Serializable {
         public static final String URI_CHANGE_ACCOUNT_PASSWORD = "/API/changeAccountPassword";
         public static final String URI_GET_ACHIEVEMENTS = "/API/getAchievements";
         public static final String URI_SET_LOCATION_INTEREST = "/API/setInterestInLocation";
-        public static final String URI_GET_LIST_OF_INTEREST_LOCATIONS = "/API/getListOfInterestLocations/:account_id/:email/:password/:json_available_locations";
-        public static final String URI_GET_COUNT_INTEREST_IN_LOCATION = "/API/getCountInterestInLocation/:account_id/:email/:password/:location_id";
+        public static final String URI_GET_LIST_OF_INTEREST_LOCATIONS = "/API/getListOfInterestLocations";
+        public static final String URI_GET_COUNT_INTEREST_IN_LOCATION = "/API/getCountInterestInLocation";
     }
 
     // Server connection info
     private static final int CONNECTION_PORT = 2058;
-    private static final String URL = "https://lempo.d.umn.edu";
+    private static final String URL = "http://192.168.1.99";//"https://lempo.d.umn.edu";
     //10.0.2.2
     // Account login status
     public static boolean LOGIN_STATUS = false;
@@ -154,7 +154,7 @@ public class SolarAccountManager implements Serializable {
                 if (!accountID.equals("")) {
 
                     // Set email & password if successfully sign in
-                    account_private_id = result;
+                    account_private_id = String.valueOf(jsonResponse.get("account_id"));
                     setEmail(email_address);
                     setPassword(input_password);
 
@@ -264,8 +264,19 @@ public class SolarAccountManager implements Serializable {
                 @Override
                 protected void onPostExecute(String result) {
 
-                    // Update the list if there's anything changed
-                    updateListOfInterestedLocation(callbackFunction);
+                    try {
+                        JSONObject jsonResult = new JSONObject(result);
+
+                        // Update the list if there's anything changed
+                        updateListOfInterestedLocation(callbackFunction);
+
+                        // Display dialog showing whether the operation is successful
+                        System.out.println(jsonResult.get("is_success").toString().equals("true") ? "Successfully set interest" : "Failed to set interest");
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
                 }
             }).execute(URL(URIs.URI_SET_LOCATION_INTEREST), HTTPMethods.POST, jsonRequest.toString());
 
@@ -291,21 +302,26 @@ public class SolarAccountManager implements Serializable {
                 availableLocations.put(new JSONObject().put("location_ID", entry.getKey()).put("interest_count", entry.getValue()));
             }
 
-            String params = "/" + account_private_id + "/" + account_email + "/" + account_password + "/" + availableLocations.toString();
+            JSONObject request = new JSONObject();
+            request.put("account_id", account_private_id);
+            request.put("email", account_email);
+            request.put("password", account_password);
+            request.put("available_locations", availableLocations);
 
             (new HTTPAsyncTask() {
                 @Override
                 protected void onPostExecute(String result) {
-
                     try {
-                        JSONArray returnedList = new JSONArray(result);
-
+                        JSONArray returnedList = new JSONArray(String.valueOf((new JSONObject(result).get("location_list"))));
                         for (int i = 0; i < returnedList.length(); ++i) {
-
                             JSONObject arrayElement = (JSONObject) returnedList.get(i);
-                            sharedLocationList.put(String.valueOf(arrayElement.get("location_ID")),
-                                    Integer.parseInt(String.valueOf(arrayElement.get("total_users_interested"))));
+                            sharedLocationList.put(String.valueOf(arrayElement.get("location_id")),
+                                    Integer.parseInt(String.valueOf(arrayElement.get("interest_count"))));
+
+                            System.out.println("ID: " + String.valueOf(arrayElement.get("location_id")));
                         }
+
+                        System.out.println("RETURNED LIST SIZE: " + returnedList.length());
 
                         // Execute callback once the update process is finish
                         ((CallbackFunction)callbackFunction).setResult(sharedLocationList);
@@ -314,7 +330,7 @@ public class SolarAccountManager implements Serializable {
                         e.printStackTrace();
                     }
                 }
-            }).execute(URL(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS + params), HTTPMethods.GET, "");
+            }).execute(URL(URIs.URI_GET_LIST_OF_INTEREST_LOCATIONS), HTTPMethods.POST, request.toString());
 
         } catch (JSONException e) {
             e.printStackTrace();
