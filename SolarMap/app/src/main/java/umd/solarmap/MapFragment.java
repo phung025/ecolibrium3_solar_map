@@ -471,124 +471,31 @@ public class MapFragment extends Fragment {
 
                         System.out.println(key + " " + value + "\n");
 
-                            QueryParameters query = new QueryParameters();
-                            query.setReturnGeometry(true);
-                            query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
-                            final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
-                            future2.addDoneListener(() -> {
-                                try {
-                                    FeatureQueryResult result = future2.get();
-                                    Iterator<Feature> iterator = result.iterator();
+                        QueryParameters query = new QueryParameters();
+                        query.setReturnGeometry(true);
+                        query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
+                        final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
+                        future2.addDoneListener(() -> {
+                            try {
+                                FeatureQueryResult result = future2.get();
+                                Iterator<Feature> iterator = result.iterator();
 
-                                    SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
-                                    while (iterator.hasNext()) {
-                                        Feature feature = iterator.next();
-
-//                                        System.out.println(value.toString() + "\n");
-//                                        if (public_location_map.containsKey(value.toString())) {
-                                            Point p = feature.getGeometry().getExtent().getCenter();
-                                            Graphic graphic = new Graphic(p, z);
-                                            mapMarkersOverlay.getGraphics().add(graphic);
-                                            System.out.println("Graphic Added!\n");
-//                                        }
-                                    }
-                                } catch (Exception e) {
-                                    Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                                SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
+                                while (iterator.hasNext()) {
+                                    Feature feature = iterator.next();
+                                    Point p = feature.getGeometry().getExtent().getCenter();
+                                    Graphic graphic = new Graphic(p, z);
+                                    mapMarkersOverlay.getGraphics().add(graphic);
+//                                  System.out.println("Graphic Added!\n");
                                 }
-                            });
-                        }
+                            } catch (Exception e) {
+                                Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                            }
+                        });
                     }
-
+                }
             });
         }
     }
 }
-
-//                    QueryParameters query = new QueryParameters();
-//                    query.setReturnGeometry(true);
-//                    query.setWhereClause("upper(OBJECT_ID) LIKE '%" + id + "%'")
-//
-//                    FeatureQueryResult result = future2.get();
-//                    Iterator<Feature> iterator = result.iterator();
-
-//                    SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
-
-//                    while (iterator.hasNext()) {
-//                        Feature feature = iterator.next();
-//
-//                        // create a Map of all available attributes as name value pairs
-//                        Map<String, Object> attr = feature.getAttributes();
-//                        Set<String> keys = attr.keySet();
-//
-//                        // Get object ID for setting interest
-//                        Object objectID = null;
-//
-//                        for (String key : keys) {
-//                            Object value = (attr.get(key) == null) ? "N/A" : attr.get(key);
-//                            System.out.println(value.toString() + "\n");
-//                            if (public_location_map.containsKey(value.toString())) {
-//                                Point p = feature.getGeometry().getExtent().getCenter();
-//                                Graphic graphic = new Graphic(p, z);
-//                                mapMarkersOverlay.getGraphics().add(graphic);
-//                                System.out.println("Graphic Added!\n");
-//                            }
-//                        }
-//
-//
-//                    QueryParameters query = new QueryParameters();
-////                    query.setMaxFeatures(100000);
-//                    query.setReturnGeometry(true);
-//                    query.setWhereClause();
-////                    query.setGeometry(GeometryEngine.buffer(new Point(46.7867, -92.1005), 500000000));
-////                    query.setSpatialRelationship(QueryParameters.SpatialRelationship.CONTAINS);
-//                    final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
-//                    future2.addDoneListener(() -> {
-//                        try {
-//                            System.out.println("\nWHAT IS GOING ON?");
-//
-//                            FeatureQueryResult result = future2.get();
-//                            Iterator<Feature> iterator = result.iterator();
-//
-//                            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
-//
-//                            while (iterator.hasNext()) {
-//                                Feature feature = iterator.next();
-//
-//                                // create a Map of all available attributes as name value pairs
-//                                Map<String, Object> attr = feature.getAttributes();
-//                                Set<String> keys = attr.keySet();
-//
-//                                // Get object ID for setting interest
-//                                Object objectID = null;
-//
-//                                for (String key : keys) {
-//                                    Object value = (attr.get(key) == null) ? "N/A" : attr.get(key);
-//                                    System.out.println(value.toString() + "\n");
-//                                    if (public_location_map.containsKey(value.toString())) {
-//                                        Point p = feature.getGeometry().getExtent().getCenter();
-//                                        Graphic graphic = new Graphic(p, z);
-//                                        mapMarkersOverlay.getGraphics().add(graphic);
-//                                        System.out.println("Graphic Added!\n");
-//                                    }
-//                                }
-//
-//
-//
-////                                Point p = feature.getGeometry().getExtent().getCenter();
-////                                Graphic graphic = new Graphic(p, z);
-////                                mapMarkersOverlay.getGraphics().add(graphic);
-////                                System.out.println("Graphic Added!\n");
-//
-//                            }
-////                            System.out.println(public_location_map.size() + "\n");
-//                            System.out.println("\n" + public_location_map.toString() + "\n");
-//                        } catch (Exception e1) {
-//                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e1.getMessage());
-//                        }
-//                    });
-//                }
-//            });
-//        }
-//    }
-//}
 
