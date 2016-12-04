@@ -40,6 +40,7 @@ import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
+import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
@@ -47,12 +48,12 @@ import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,7 @@ import java.util.concurrent.ExecutionException;
 
 import umd.solarmap.AccountManager.SolarAccountManager;
 import umd.solarmap.RestAPI.HTTPAsyncTask;
+import umd.solarmap.UtilitiesClasses.CallbackFunction;
 
 /**
  * To create a fragment, extend the Fragment class, then override key lifecycle methods to insert your app logic, similar to the way you would with an Activity class.
@@ -438,18 +440,18 @@ public class MapFragment extends Fragment {
         }
 
         // add the graphic to the map
-        protected void onPostExecute(List<SolarProject> result) {
+        protected void onPostExecute(List<SolarProject> results) {
             // create the symbol to mark on the map
             BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.star_marker);
             final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
-            installed_projects = result;
+            installed_projects = results;
 
             // display each point on the map
-            for (SolarProject s : result) {
+            for (SolarProject s : results) {
                 if (s.p != null) {
 
                     if ((s.p.getY() < Float.valueOf(getString(R.string.YMax)) && s.p.getY() > Float.valueOf(getString(R.string.YMin))) &&
-                            (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() >  Float.valueOf(getString(R.string.XMax)))) {
+                            (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() > Float.valueOf(getString(R.string.XMax)))) {
                         System.out.print("Title" + s.title);
                         Graphic graphic = new Graphic(s.p, marker);
                         mapMarkersOverlay.getGraphics().add(graphic);
@@ -458,6 +460,45 @@ public class MapFragment extends Fragment {
                     installed_projects.remove(s);
                 }
             }
+
+            SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction() {
+                @Override
+                public void onPostExecute() {
+                    HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
+
+                    QueryParameters query = new QueryParameters();
+                    query.setMaxFeatures(100);
+                    query.setReturnGeometry(true);
+                    query.setGeometry(GeometryEngine.buffer(new Point(46.7867, -92.1005), 500000000));
+                    query.setSpatialRelationship(QueryParameters.SpatialRelationship.CONTAINS);
+                    final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).selectFeaturesAsync(query, FeatureLayer.SelectionMode.NEW);
+                    future2.addDoneListener(() -> {
+                        try {
+                            System.out.println("\nWHAT IS GOING ON?");
+                            // Result
+                            FeatureQueryResult result = future2.get();
+                            Iterator<Feature> iterator = result.iterator();
+                            // create a TextView to display field values
+
+                            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
+
+                            while (iterator.hasNext()) {
+                                Feature feature = iterator.next();
+                                Point p = feature.getGeometry().getExtent().getCenter();
+                                Graphic graphic = new Graphic(p, z);
+                                mapMarkersOverlay.getGraphics().add(graphic);
+                                System.out.println("Graphic Added!\n");
+
+                            }
+//                            System.out.println(public_location_map.size() + "\n");
+//                            System.out.println("\n" + public_location_map.toString() + "\n");
+                        } catch (Exception e1) {
+                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e1.getMessage());
+                        }
+                    });
+                }
+            });
         }
     }
 }
+
