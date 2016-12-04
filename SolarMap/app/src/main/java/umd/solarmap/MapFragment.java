@@ -40,7 +40,6 @@ import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
-import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
@@ -314,11 +313,13 @@ public class MapFragment extends Fragment {
                             FeatureQueryResult result = future2.get();
                             Iterator<Feature> iterator = result.iterator();
 
-                            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
+                            BitmapDrawable z = (BitmapDrawable) getResources().getDrawable(R.drawable.green_marker);
+                            final PictureMarkerSymbol marker = new PictureMarkerSymbol(z);
+
                             while (iterator.hasNext()) {
                                 Feature feature = iterator.next();
                                 Point p = feature.getGeometry().getExtent().getCenter(); //place in middle of rooftop
-                                Graphic graphic = new Graphic(p, z);
+                                Graphic graphic = new Graphic(p, marker);
                                 mapMarkersOverlay.getGraphics().add(graphic);
 //                                  System.out.println("Graphic Added!\n");
                             }
