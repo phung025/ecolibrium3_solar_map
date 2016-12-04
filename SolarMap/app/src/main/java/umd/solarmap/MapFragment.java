@@ -286,6 +286,49 @@ public class MapFragment extends Fragment {
                 return super.onSingleTapConfirmed(e);
             }
         });
+
+        SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction() {
+            @Override
+            public void onPostExecute() {
+                //Hash map that contains the building ids and the interest in each of these locations
+                HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
+
+                // for each entry go through and query to find the location on the map and place a marker on it
+                for (Map.Entry<String, Integer> entry : public_location_map.entrySet()) {
+                    String key = entry.getKey();
+                    Integer value = entry.getValue();
+
+                    System.out.println(key + " " + value + "\n");
+
+                    //set up query
+                    QueryParameters query = new QueryParameters();
+                    query.setReturnGeometry(true);
+                    query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
+
+                    //fire off query (async)
+                    final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
+
+                    //mark locations that come back from query with magenta diamond
+                    future2.addDoneListener(() -> {
+                        try {
+                            FeatureQueryResult result = future2.get();
+                            Iterator<Feature> iterator = result.iterator();
+
+                            SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
+                            while (iterator.hasNext()) {
+                                Feature feature = iterator.next();
+                                Point p = feature.getGeometry().getExtent().getCenter(); //place in middle of rooftop
+                                Graphic graphic = new Graphic(p, z);
+                                mapMarkersOverlay.getGraphics().add(graphic);
+//                                  System.out.println("Graphic Added!\n");
+                            }
+                        } catch (Exception e) {
+                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                        }
+                    });
+                }
+            }
+        });
     }
 
 
@@ -458,43 +501,6 @@ public class MapFragment extends Fragment {
                     installed_projects.remove(s);
                 }
             }
-
-
-            SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction() {
-                @Override
-                public void onPostExecute() {
-                    HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
-
-                    for (Map.Entry<String, Integer> entry : public_location_map.entrySet()) {
-                        String key = entry.getKey();
-                        Integer value = entry.getValue();
-
-                        System.out.println(key + " " + value + "\n");
-
-                        QueryParameters query = new QueryParameters();
-                        query.setReturnGeometry(true);
-                        query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
-                        final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
-                        future2.addDoneListener(() -> {
-                            try {
-                                FeatureQueryResult result = future2.get();
-                                Iterator<Feature> iterator = result.iterator();
-
-                                SimpleMarkerSymbol z = new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.DIAMOND, Color.MAGENTA, 12);
-                                while (iterator.hasNext()) {
-                                    Feature feature = iterator.next();
-                                    Point p = feature.getGeometry().getExtent().getCenter();
-                                    Graphic graphic = new Graphic(p, z);
-                                    mapMarkersOverlay.getGraphics().add(graphic);
-//                                  System.out.println("Graphic Added!\n");
-                                }
-                            } catch (Exception e) {
-                                Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
-                            }
-                        });
-                    }
-                }
-            });
         }
     }
 }
