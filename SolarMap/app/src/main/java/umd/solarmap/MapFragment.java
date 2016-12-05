@@ -88,6 +88,7 @@ public class MapFragment extends Fragment {
 
     // Map's graphic overlay for putting markers
     private GraphicsOverlay mapMarkersOverlay;
+    private HashMap<String, Integer> others_locations;
 
     // Callout to display rooftop information
     private Callout mCallout;
@@ -99,6 +100,7 @@ public class MapFragment extends Fragment {
 
     public void onActivityCreated(Bundle savedInstance) {
         super.onActivityCreated(savedInstance);
+        others_locations = new HashMap<>();
 
         installed_projects = new ArrayList<>();
 
@@ -244,6 +246,13 @@ public class MapFragment extends Fragment {
                                         Object ModerateData = attributes.get("VALUE_1");
                                         Object FlatValue = attributes.get("flat_pct");
 
+                                        BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.red_pin);
+                                        final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
+                                        Point p = feature.getGeometry().getExtent().getCenter();
+
+                                        Graphic graphic = new Graphic(p, marker);
+                                        mapMarkersOverlay.getGraphics().add(graphic);
+
                                         intent.putExtra("ObjectID", String.valueOf(finalObjectID));
                                         intent.putExtra("Optimal", OptimalData.toString());
                                         intent.putExtra("Moderate", ModerateData.toString());
@@ -258,6 +267,11 @@ public class MapFragment extends Fragment {
                                             dialogContent.append(ModerateData.toString() + " square meters of moderate suitability" + "\n");
                                         } else
                                             dialogContent.append("Moderate Solar Area: N/A");
+                                        if (others_locations.containsKey(String.valueOf(finalObjectID))) {
+                                            dialogContent.append(others_locations.get(String.valueOf(finalObjectID)) + " people like this.\n" );
+                                        } else {
+                                            dialogContent.append("0 people like this.\n");
+                                        };
                                     } catch (JSONException E) {
                                         System.out.println("Error: " + E);
                                     }
@@ -291,6 +305,7 @@ public class MapFragment extends Fragment {
             public void onPostExecute() {
                 //Hash map that contains the building ids and the interest in each of these locations
                 HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
+                others_locations = public_location_map;
 
                 // for each entry go through and query to find the location on the map and place a marker on it
                 for (Map.Entry<String, Integer> entry : public_location_map.entrySet()) {
