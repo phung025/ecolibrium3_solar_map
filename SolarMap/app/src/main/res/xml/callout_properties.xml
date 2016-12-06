@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <calloutStyle
-        backgroundColor="#FFC0C0C0"
+        backgroundColor="@android:color/white"
         borderColor="@android:color/white"
         borderWidth="4"
         cornerRadius="20"

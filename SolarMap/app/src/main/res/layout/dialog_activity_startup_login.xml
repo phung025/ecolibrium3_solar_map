@@ -7,6 +7,7 @@
     android:orientation="vertical">
 
     <RelativeLayout
+        android:id="@+id/loginDialogHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorAccent">
@@ -14,10 +15,13 @@
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:srcCompat="@drawable/incorrect"
             android:layout_centerVertical="true"
             android:layout_centerHorizontal="true"
-            android:id="@+id/imageView" />
+            android:layout_marginBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:id="@+id/loginDialogIcon" />
     </RelativeLayout>
 
     <TextView
@@ -41,14 +45,15 @@
             android:id="@+id/loginDialogButtonOK"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=" Ok "
-            android:layout_marginRight="10dp"
+            android:text="Ok"
+
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
             android:background="@drawable/button_red_border"
             android:textColor="@android:color/white"
             android:layout_marginBottom="10dp"
             android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:layout_marginTop="10dp" />
     </RelativeLayout>
 

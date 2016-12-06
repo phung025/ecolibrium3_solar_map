@@ -1,4 +1,4 @@
-const SERVER_PORT = 2058;
+const SERVER_PORT = 2048;
 
 // All URIs
 var URIs = {

@@ -160,11 +160,8 @@ public class SolarAccountManager implements Serializable {
                 }
             } else if (action == ACCOUNT_ACTION.REGISTER) {
                 String isSuccess = String.valueOf(jsonResponse.get("is_registered"));
-
                 // if successfully sign up, the client will receive the private user ID
-                if (!isSuccess.equals("true")) {
-                    success[0] = true;
-                }
+                if (isSuccess.equals("true")) success[0] = true;
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
