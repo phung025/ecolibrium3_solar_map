@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -111,17 +112,15 @@ public class MapFragment extends Fragment {
         searchTextField = (EditText) getActivity().findViewById(R.id.locationSearchTextField);
         toCurrentLocationButton = (FloatingActionButton) getActivity().findViewById(R.id.toCurrentLocationButton);
 
-        new XMLParser().execute(getString(R.string.past_projects));
-
         (geocodeParams = new GeocodeParameters()).setCountryCode("United States");
         mapMarkersOverlay = new GraphicsOverlay();
         mainMapView.getGraphicsOverlays().add(mapMarkersOverlay); // Add the overlay for displaying markers to the map
 
-        // Setting initial view point of the map
+        // Setting initial view point of the map (Duluth)
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
         (mainMap = new ArcGISMap(getString(R.string.solar_potential_map_2))).setInitialViewpoint(vp);
 
-
+        // Setup UI components
         this.setupMap();
         this.setupTextField();
         this.setupButtons();
@@ -135,11 +134,96 @@ public class MapFragment extends Fragment {
         //Sets the callout layout
         Callout.Style style = new Callout.Style(getContext(), R.xml.callout_properties);
         mCallout.setStyle(style);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Display all solar projects in Duluth
+        new XMLParser().execute(getString(R.string.past_projects));
+
+        SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction() {
+            @Override
+            public void onPostExecute() {
+
+                if (isAdded()) {
+                    //Hash map that contains the building ids and the interest in each of these locations
+                    HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
+                    others_locations = public_location_map;
+
+                    // for each entry go through and query to find the location on the map and place a marker on it
+                    for (Map.Entry<String, Integer> entry : public_location_map.entrySet()) {
+                        String key = entry.getKey();
+                        Integer value = entry.getValue();
+
+                        System.out.println(key + " " + value + "\n");
+
+                        //set up query
+                        QueryParameters query = new QueryParameters();
+                        query.setReturnGeometry(true);
+                        query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
+
+                        //fire off query (async)
+                        final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
+
+                        //mark locations that come back from query with magenta diamond
+                        future2.addDoneListener(() -> {
+                            try {
+                                FeatureQueryResult result = future2.get();
+                                Iterator<Feature> iterator = result.iterator();
+
+                                BitmapDrawable z = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.green_marker);
+                                final PictureMarkerSymbol marker = new PictureMarkerSymbol(z);
+
+                                while (iterator.hasNext()) {
+                                    Feature feature = iterator.next();
+                                    Point p = feature.getGeometry().getExtent().getCenter(); //place in middle of rooftop
+                                    Graphic graphic = new Graphic(p, marker);
+                                    mapMarkersOverlay.getGraphics().add(graphic);
+                                }
+                            } catch (Exception e) {
+                                Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                            }
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    private void setupMap() {
+        // Set a listener that will be called when the MapView is initialized.
+        // Check if the map is ready for a user to make queries.
+        //region mainMapView.OnStatusChangedListener()
+
+        mainMapView.addDrawStatusChangedListener(drawStatusChangedEvent -> {
+            // Enable the search text field only when the map is initialized
+            searchTextField.setEnabled(true);
+
+            mainMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF); //changed from LocationDisplayManager.AutoPanMode.LOCATION
+            mainMapView.getLocationDisplay().setShowLocation(true);
+            mainMapView.getLocationDisplay().startAsync();
+
+        });
+
+        // Change web map's insol_dlh_annovtpk layer to our own insol_dlh_annovtpk layer
+        mainMap.addDoneLoadingListener(() -> {
+
+            // Because we cannot load the rooftop solar data from the web map, we'll replace that layer with our own layer we got from
+            // other source
+            if ((mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD) || (mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD.NOT_LOADED)) {
+                System.out.println("MAP FAILED TO LOAD");
+            } else if ((mainMap.getLoadStatus() == LoadStatus.LOADED)) {
+                mainMap.getOperationalLayers().set(0, insol_dlh_annovtpk);
+            }
+        });
 
         // Listener for selecting a feature.
         mainMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getContext(), mainMapView) {
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
+
                 // remove any existing callouts
                 if (mCallout.isShowing()) {
                     mCallout.dismiss();
@@ -172,13 +256,14 @@ public class MapFragment extends Fragment {
                             calloutContent.setVerticalScrollBarEnabled(true);
                             calloutContent.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
                             calloutContent.setMovementMethod(new ScrollingMovementMethod());
+                            calloutContent.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorWhiteText));
 
                             //add each of the elements from the solar project object to the display view
-                            calloutContent.append("Title : " + s.title + "\n");
+                            calloutContent.append("Project Title : " + s.title + "\n");
                             calloutContent.append("Desc : " + s.des + "\n");
                             calloutContent.append("Link : " + s.ulink + "\n");
                             calloutContent.append("Date : " + s.upd + "\n");
-                            calloutContent.append("Wgs84Point : " + "(" + s.p.getX() + "," + s.p.getY() + ")");
+                            calloutContent.append("Coordinate : " + "(" + s.p.getX() + "," + s.p.getY() + ")");
 
                             //display the callout
                             mCallout.setLocation(clickPoint);
@@ -233,61 +318,64 @@ public class MapFragment extends Fragment {
                                 @Override
                                 protected void onPostExecute(String result) {
 
-                                    // center the mapview on selected feature
-                                    Envelope envelope1 = feature.getGeometry().getExtent();
+                                    if (isAdded()) {
+                                        // center the mapview on selected feature
+                                        Envelope envelope1 = feature.getGeometry().getExtent();
 
-                                    mainMapView.setViewpointGeometryWithPaddingAsync(envelope1, 200);
-                                    try {
-                                        JSONObject data = new JSONObject(result);
-                                        JSONArray arrayData = data.getJSONArray("features");
-                                        JSONObject attributesData = new JSONObject(String.valueOf(arrayData.get(0)));
-                                        JSONObject attributes = (JSONObject) attributesData.get("attributes");
-                                        Object OptimalData = attributes.get("VALUE_2");
-                                        Object ModerateData = attributes.get("VALUE_1");
-                                        Object FlatValue = attributes.get("flat_pct");
+                                        mainMapView.setViewpointGeometryWithPaddingAsync(envelope1, 200);
+                                        try {
+                                            JSONObject data = new JSONObject(result);
+                                            JSONArray arrayData = data.getJSONArray("features");
+                                            JSONObject attributesData = new JSONObject(String.valueOf(arrayData.get(0)));
+                                            JSONObject attributes = (JSONObject) attributesData.get("attributes");
+                                            Object OptimalData = attributes.get("VALUE_2");
+                                            Object ModerateData = attributes.get("VALUE_1");
+                                            Object FlatValue = attributes.get("flat_pct");
 
-                                        BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.red_pin);
-                                        final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
-                                        Point p = feature.getGeometry().getExtent().getCenter();
+                                            BitmapDrawable d = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.red_pin);
+                                            final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
+                                            Point p = feature.getGeometry().getExtent().getCenter();
 
-                                        Graphic graphic = new Graphic(p, marker);
-                                        mapMarkersOverlay.getGraphics().add(graphic);
+                                            Graphic graphic = new Graphic(p, marker);
+                                            mapMarkersOverlay.getGraphics().add(graphic);
 
-                                        intent.putExtra("ObjectID", String.valueOf(finalObjectID));
-                                        intent.putExtra("Optimal", OptimalData.toString());
-                                        intent.putExtra("Moderate", ModerateData.toString());
-                                        intent.putExtra("Flat", FlatValue.toString());
+                                            intent.putExtra("ObjectID", String.valueOf(finalObjectID));
+                                            intent.putExtra("Optimal", OptimalData.toString());
+                                            intent.putExtra("Moderate", ModerateData.toString());
+                                            intent.putExtra("Flat", FlatValue.toString());
 
-                                        if (OptimalData != null) {
-                                            dialogContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
-                                        } else
-                                            dialogContent.append("Optimal Solar Area: N/A\n");
+                                            if (OptimalData != null) {
+                                                dialogContent.append(OptimalData.toString() + " square meters of optimal suitability" + "\n");
+                                            } else
+                                                dialogContent.append("Optimal Solar Area: N/A\n");
 
-                                        if (ModerateData != null) {
-                                            dialogContent.append(ModerateData.toString() + " square meters of moderate suitability" + "\n");
-                                        } else
-                                            dialogContent.append("Moderate Solar Area: N/A");
-                                        if (others_locations.containsKey(String.valueOf(finalObjectID))) {
-                                            dialogContent.append(others_locations.get(String.valueOf(finalObjectID)) + " people like this.\n" );
-                                        } else {
-                                            dialogContent.append("0 people like this.\n");
-                                        };
-                                    } catch (JSONException E) {
-                                        System.out.println("Error: " + E);
-                                    }
+                                            if (ModerateData != null) {
+                                                dialogContent.append(ModerateData.toString() + " square meters of moderate suitability" + "\n");
+                                            } else
+                                                dialogContent.append("Moderate Solar Area: N/A");
+                                            if (others_locations.containsKey(String.valueOf(finalObjectID))) {
+                                                dialogContent.append(others_locations.get(String.valueOf(finalObjectID)) + " people like this.\n");
+                                            } else {
+                                                dialogContent.append("0 people like this.\n");
+                                            }
+                                            ;
+                                        } catch (JSONException E) {
+                                            System.out.println("Error: " + E);
+                                        }
 
-                                    Boolean found = false;
-                                    for (SolarProject s : installed_projects) {
-                                        if (s.p != null) {
-                                            Point k = s.p;
-                                            if ((k.getX() < cp.getX() + wgsTolerance && k.getX() > cp.getX() - wgsTolerance) && (k.getY() < cp.getY() + wgsTolerance && k.getY() > cp.getY() - wgsTolerance)) {
-                                                found = true;
+                                        Boolean found = false;
+                                        for (SolarProject s : installed_projects) {
+                                            if (s.p != null) {
+                                                Point k = s.p;
+                                                if ((k.getX() < cp.getX() + wgsTolerance && k.getX() > cp.getX() - wgsTolerance) && (k.getY() < cp.getY() + wgsTolerance && k.getY() > cp.getY() - wgsTolerance)) {
+                                                    found = true;
+                                                }
                                             }
                                         }
-                                    }
-                                    if (!found) {
-                                        intent.putExtra("Data", dialogContent.getText());
-                                        startActivity(intent);
+                                        if (!found) {
+                                            intent.putExtra("Data", dialogContent.getText());
+                                            startActivity(intent);
+                                        }
                                     }
                                 }
                             }).execute("http://services.arcgis.com/8df8p0NlLFEShl0r/ArcGIS/rest/services/foot_dlh_5k/FeatureServer/0/query?where=&objectIds=" + attr.get("OBJECTID") + "&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=standard&distance=&units=esriSRUnit_Meter&outFields=OBJECTID%2CBldg_Name%2CBldg_ID%2C+Parcel%2C+BuildingType%2C+created_user%2Ccreated_date%2Clast_edited_user%2Clast_edited_date%2CBuildingNumber+%2Cfidnum+%2COBJECTID_1+%2COBJECTID_12+%2CVALUE_0+%2CVALUE_1+%2CVALUE_2+%2COBJECTID_12_13+%2COBJECTID_12_13_14+%2CVALUE_01+%2CVALUE_12+%2Csol_700k+%2Csol_1000k+%2Cflat+%2Cflat_pct+&returnGeometry=false&returnCentroid=false&multipatchOption=&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnDistinctValues=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&quantizationParameters=&sqlFormat=standard&f=pjson&token=", "GET");
@@ -297,87 +385,6 @@ public class MapFragment extends Fragment {
                     }
                 });
                 return super.onSingleTapConfirmed(e);
-            }
-        });
-
-        SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction() {
-            @Override
-            public void onPostExecute() {
-                //Hash map that contains the building ids and the interest in each of these locations
-                HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
-                others_locations = public_location_map;
-
-                // for each entry go through and query to find the location on the map and place a marker on it
-                for (Map.Entry<String, Integer> entry : public_location_map.entrySet()) {
-                    String key = entry.getKey();
-                    Integer value = entry.getValue();
-
-                    System.out.println(key + " " + value + "\n");
-
-                    //set up query
-                    QueryParameters query = new QueryParameters();
-                    query.setReturnGeometry(true);
-                    query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
-
-                    //fire off query (async)
-                    final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
-
-                    //mark locations that come back from query with magenta diamond
-                    future2.addDoneListener(() -> {
-                        try {
-                            FeatureQueryResult result = future2.get();
-                            Iterator<Feature> iterator = result.iterator();
-
-                            BitmapDrawable z = (BitmapDrawable) getResources().getDrawable(R.drawable.green_marker);
-                            final PictureMarkerSymbol marker = new PictureMarkerSymbol(z);
-
-                            while (iterator.hasNext()) {
-                                Feature feature = iterator.next();
-                                Point p = feature.getGeometry().getExtent().getCenter(); //place in middle of rooftop
-                                Graphic graphic = new Graphic(p, marker);
-                                mapMarkersOverlay.getGraphics().add(graphic);
-//                                  System.out.println("Graphic Added!\n");
-                            }
-                        } catch (Exception e) {
-                            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-
-    private void setupMap() {
-        // Set a listener that will be called when the MapView is initialized.
-        // Check if the map is ready for a user to make queries.
-        //region mainMapView.OnStatusChangedListener()
-
-        mainMapView.addDrawStatusChangedListener(drawStatusChangedEvent -> {
-            // Enable the search text field only when the map is initialized
-            searchTextField.setEnabled(true);
-
-            mainMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF); //changed from LocationDisplayManager.AutoPanMode.LOCATION
-            mainMapView.getLocationDisplay().setShowLocation(true);
-            mainMapView.getLocationDisplay().startAsync();
-
-        });
-
-        // Change web map's insol_dlh_annovtpk layer to our own insol_dlh_annovtpk layer
-        mainMap.addDoneLoadingListener(() -> {
-
-            if ((mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD) || (mainMap.getLoadStatus() == LoadStatus.FAILED_TO_LOAD.NOT_LOADED)) {
-                System.out.println("MAP FAILED TO LOAD");
-
-            } else if ((mainMap.getLoadStatus() == LoadStatus.LOADED)) {
-
-
-                for (Layer layer : mainMap.getOperationalLayers()) {
-
-                    System.out.println(layer.getName() + layer.getId());
-                }
-
-                mainMap.getOperationalLayers().set(0, insol_dlh_annovtpk);
             }
         });
     }
@@ -492,29 +499,32 @@ public class MapFragment extends Fragment {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
             //return a list of the solarproject objects
             return a;
         }
 
         // add the graphic to the map
         protected void onPostExecute(List<SolarProject> results) {
-            // create the symbol to mark on the map
-            BitmapDrawable d = (BitmapDrawable) getResources().getDrawable(R.drawable.star_marker);
-            final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
-            installed_projects = results;
 
-            // display each point on the map
-            for (SolarProject s : results) {
-                if (s.p != null) {
+            if (isAdded()) {
+                // create the symbol to mark on the map
+                BitmapDrawable d = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.star_marker);
+                final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
+                installed_projects = results;
 
-                    if ((s.p.getY() < Float.valueOf(getString(R.string.YMax)) && s.p.getY() > Float.valueOf(getString(R.string.YMin))) &&
-                            (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() > Float.valueOf(getString(R.string.XMax)))) {
-                        System.out.print("Title" + s.title);
-                        Graphic graphic = new Graphic(s.p, marker);
-                        mapMarkersOverlay.getGraphics().add(graphic);
+                // display each point on the map
+                for (SolarProject s : results) {
+                    if (s.p != null) {
+
+                        if ((s.p.getY() < Float.valueOf(getString(R.string.YMax)) && s.p.getY() > Float.valueOf(getString(R.string.YMin))) &&
+                                (s.p.getX() < Float.valueOf(getString(R.string.XMin)) && s.p.getX() > Float.valueOf(getString(R.string.XMax)))) {
+                            Graphic graphic = new Graphic(s.p, marker);
+                            mapMarkersOverlay.getGraphics().add(graphic);
+                        }
+                    } else {
+                        installed_projects.remove(s);
                     }
-                } else {
-                    installed_projects.remove(s);
                 }
             }
         }
