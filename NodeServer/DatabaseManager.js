@@ -94,6 +94,22 @@ module.exports = function DatabaseManager() {
    * @param isSuccessFN - callback function once the login/sign up process is finished
    */
   function registerAndLoginHelper(action, email_address, password, isSuccessFn) {
+
+    this.isEmailValidate = function(email_string) {
+      var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      return re.test(email_string);
+    };
+
+    // Check if email is in valid format
+    // Return false if the email address is in invalid format
+    if (!isEmailValidate(email_address)) {
+      if (action === ACCOUNT_ACTIONS.REGISTER) {
+        isSuccessFn(false);
+      } else {
+        isSuccessFn(false, "");
+      }
+    }
+
     MongoClient.connect(DATABASE_URL, function(err, db) {
 
       var search_collection = db.collection(COLLECTIONS.COLLECTION_USER_ACCOUNT_DATABASE);
