@@ -309,7 +309,7 @@ module.exports = function DatabaseManager() {
 
             // Remove unecessary items
             // Remove from the end of the array to prevent screwing up the element index
-            for (i = returned_list.length-1 ; i >= 0  ; --i) {
+/*            for (i = returned_list.length-1 ; i >= 0  ; --i) {
               for (j = 0 ; j < available_locations.length ; ++j) {
 
                 if ((returned_list[i].location_id === available_locations[j].location_ID) &&
@@ -319,7 +319,7 @@ module.exports = function DatabaseManager() {
                 }
               }
             }
-
+*/
             // Return true if successful and the list containing all needed locations
             completionFN(true, returned_list);
           });
