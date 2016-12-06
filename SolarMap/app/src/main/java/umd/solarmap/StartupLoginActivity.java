@@ -3,14 +3,11 @@ package umd.solarmap;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
+import umd.solarmap.DialogClasses.LoginDialog;
 import umd.solarmap.AccountManager.SolarAccountManager;
 
 
@@ -48,7 +45,8 @@ public class StartupLoginActivity extends AppCompatActivity {
             Intent intent = new Intent(this, MainActivity.class);
             startActivity(intent);
         } else {
-
+            // Display message dialog when user enter wrong username or password
+            LoginDialog.showDialog(this, "Failed to Login. Wrong Username or Password.");
         }
     }
 
@@ -58,7 +56,13 @@ public class StartupLoginActivity extends AppCompatActivity {
         String email_address = mEmailView.getText().toString();
         String password = mPasswordView.getText().toString();
 
-        SolarAccountManager.appAccountManager().registerAccount(email_address, password);
+        // If successfully register
+        if (SolarAccountManager.appAccountManager().registerAccount(email_address, password)) {
+
+        } else { // If failed to register account
+            // Display message dialog when user enter wrong username or password
+            LoginDialog.showDialog(this, "Account Already Existed or Invalid Email.");
+        }
     }
 }
 

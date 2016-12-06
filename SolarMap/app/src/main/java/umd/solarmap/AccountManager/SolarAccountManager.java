@@ -51,8 +51,6 @@ public class SolarAccountManager implements Serializable {
     private static final int CONNECTION_PORT = 2058;
     private static final String URL = "https://lempo.d.umn.edu";
     //10.0.2.2
-    // Account login status
-    public static boolean LOGIN_STATUS = false;
 
     // User's account info
     private String account_private_id = null; // This one should never be public
@@ -159,7 +157,6 @@ public class SolarAccountManager implements Serializable {
                     setPassword(input_password);
 
                     success[0] = true;
-                    LOGIN_STATUS = (action == ACCOUNT_ACTION.LOG_IN) ? true : false;
                 }
             } else if (action == ACCOUNT_ACTION.REGISTER) {
                 String isSuccess = String.valueOf(jsonResponse.get("is_registered"));
@@ -180,8 +177,9 @@ public class SolarAccountManager implements Serializable {
         return success[0];
     }
 
+
     public void signOut() {
-        LOGIN_STATUS = false;
+
     }
 
     /*********************
