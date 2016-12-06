@@ -30,7 +30,6 @@ import com.esri.arcgisruntime.geometry.Point;
 import com.esri.arcgisruntime.geometry.SpatialReferences;
 import com.esri.arcgisruntime.layers.ArcGISVectorTiledLayer;
 import com.esri.arcgisruntime.layers.FeatureLayer;
-import com.esri.arcgisruntime.layers.Layer;
 import com.esri.arcgisruntime.loadable.LoadStatus;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Viewpoint;
@@ -139,57 +138,11 @@ public class MapFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
         // Display all solar projects in Duluth
         new XMLParser().execute(getString(R.string.past_projects));
+        lets_update();
 
-        SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction() {
-            @Override
-            public void onPostExecute() {
 
-                if (isAdded()) {
-                    //Hash map that contains the building ids and the interest in each of these locations
-                    HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
-                    others_locations = public_location_map;
-
-                    // for each entry go through and query to find the location on the map and place a marker on it
-                    for (Map.Entry<String, Integer> entry : public_location_map.entrySet()) {
-                        String key = entry.getKey();
-                        Integer value = entry.getValue();
-
-                        System.out.println(key + " " + value + "\n");
-
-                        //set up query
-                        QueryParameters query = new QueryParameters();
-                        query.setReturnGeometry(true);
-                        query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
-
-                        //fire off query (async)
-                        final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
-
-                        //mark locations that come back from query with magenta diamond
-                        future2.addDoneListener(() -> {
-                            try {
-                                FeatureQueryResult result = future2.get();
-                                Iterator<Feature> iterator = result.iterator();
-
-                                BitmapDrawable z = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.green_marker);
-                                final PictureMarkerSymbol marker = new PictureMarkerSymbol(z);
-
-                                while (iterator.hasNext()) {
-                                    Feature feature = iterator.next();
-                                    Point p = feature.getGeometry().getExtent().getCenter(); //place in middle of rooftop
-                                    Graphic graphic = new Graphic(p, marker);
-                                    mapMarkersOverlay.getGraphics().add(graphic);
-                                }
-                            } catch (Exception e) {
-                                Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
-                            }
-                        });
-                    }
-                }
-            }
-        });
     }
 
     private void setupMap() {
@@ -332,12 +285,12 @@ public class MapFragment extends Fragment {
                                             Object ModerateData = attributes.get("VALUE_1");
                                             Object FlatValue = attributes.get("flat_pct");
 
-                                            BitmapDrawable d = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.red_pin);
-                                            final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
-                                            Point p = feature.getGeometry().getExtent().getCenter();
-
-                                            Graphic graphic = new Graphic(p, marker);
-                                            mapMarkersOverlay.getGraphics().add(graphic);
+//                                            BitmapDrawable d = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.red_pin);
+//                                            final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
+//                                            Point p = feature.getGeometry().getExtent().getCenter();
+//
+//                                            Graphic graphic = new Graphic(p, marker);
+//                                            mapMarkersOverlay.getGraphics().add(graphic);
 
                                             intent.putExtra("ObjectID", String.valueOf(finalObjectID));
                                             intent.putExtra("Optimal", OptimalData.toString());
@@ -528,6 +481,55 @@ public class MapFragment extends Fragment {
                 }
             }
         }
+    }
+    public void lets_update(){
+        SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction() {
+            @Override
+            public void onPostExecute() {
+
+                if (isAdded()) {
+                    //Hash map that contains the building ids and the interest in each of these locations
+                    HashMap<String, Integer> public_location_map = (HashMap<String, Integer>) this.getResult();
+                    others_locations = public_location_map;
+
+                    // for each entry go through and query to find the location on the map and place a marker on it
+                    for (Map.Entry<String, Integer> entry : public_location_map.entrySet()) {
+                        String key = entry.getKey();
+                        Integer value = entry.getValue();
+
+                        System.out.println(key + " " + value + "\n");
+
+                        //set up query
+                        QueryParameters query = new QueryParameters();
+                        query.setReturnGeometry(true);
+                        query.setWhereClause("upper(OBJECTID) LIKE '%" + key + "%'");
+
+                        //fire off query (async)
+                        final ListenableFuture<FeatureQueryResult> future2 = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query);
+
+                        //mark locations that come back from query with magenta diamond
+                        future2.addDoneListener(() -> {
+                            try {
+                                FeatureQueryResult result = future2.get();
+                                Iterator<Feature> iterator = result.iterator();
+
+                                BitmapDrawable z = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.green_marker);
+                                final PictureMarkerSymbol marker = new PictureMarkerSymbol(z);
+
+                                while (iterator.hasNext()) {
+                                    Feature feature = iterator.next();
+                                    Point p = feature.getGeometry().getExtent().getCenter(); //place in middle of rooftop
+                                    Graphic graphic = new Graphic(p, marker);
+                                    mapMarkersOverlay.getGraphics().add(graphic);
+                                }
+                            } catch (Exception e) {
+                                Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+                            }
+                        });
+                    }
+                }
+            }
+        });
     }
 }
 
