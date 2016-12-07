@@ -1,9 +1,9 @@
 The most up to date node code is currently running as a server using a mongodb on lempo.d.umn.edu (port 2058)
 
 Steps to run:
-* This node server uses a mongo as a dependency, setup mongo.
-* Install other dependencies by `npm install`
-* Start server by `node index.js`
+* Start mongodb - `mongod`
+* Install other dependencies -- `npm install`
+* Start the server -- `npm start`
 
 Currently supported restAPI calls:
 * GET - `/API/loginAccount/:email/:password`

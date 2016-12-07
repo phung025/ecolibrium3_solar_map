@@ -57,10 +57,10 @@ public class SavedLocationsFragment extends ListFragment
         SolarAccountManager.appAccountManager().getListOfInterestedLocation(new CallbackFunction()
         {
             @Override
-            public void onPostExecute()
+            public void onPostExecute(Object result)
             {
                 //Sort the List according to popularity and assign it
-                myUserLocationMap = sortByValue((Map<String, Integer>) this.getResult());
+                myUserLocationMap = sortByValue((Map<String, Integer>) result);
 
                 for (String key : myUserLocationMap.keySet())
                 {
