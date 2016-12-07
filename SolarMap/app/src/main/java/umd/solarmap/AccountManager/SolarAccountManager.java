@@ -62,7 +62,7 @@ public class SolarAccountManager implements Serializable {
     Map<String, Integer> sharedLocationList; // Global locations list shared by all users
 
     /**
-     * Defaul constructor. Declared as private in order to use singleton pattern
+     * Default constructor. Declared as private in order to use singleton pattern
      */
     private SolarAccountManager() {
 

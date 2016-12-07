@@ -115,8 +115,41 @@ public class MapFragment extends Fragment {
         mapMarkersOverlay = new GraphicsOverlay();
         mainMapView.getGraphicsOverlays().add(mapMarkersOverlay); // Add the overlay for displaying markers to the map
 
-        // Setting initial view point of the map (Duluth)
+        // Setting initial view point of the map: change viewpoint if getting from savedLocation fragment
+        Bundle myBundle = this.getArguments();
+        //get viewpoint based on the id received from the bundle
+        String bundleId = null;
+
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
+
+        if(myBundle != null) bundleId= myBundle.getString("locationID","null");
+
+        if(bundleId != null)
+        {
+            //set up query
+            QueryParameters query = new QueryParameters();
+            query.setReturnGeometry(true);
+            query.setWhereClause("upper(OBJECTID) LIKE '%" + bundleId + "%'");
+
+            //fire off query (async)
+            try
+            {
+                FeatureQueryResult myResult = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query).get();
+
+                Point p = myResult.iterator().next().getGeometry().getExtent().getCenter();
+
+                vp = new Viewpoint(p,5000);
+            } catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            } catch (ExecutionException e)
+            {
+                e.printStackTrace();
+            }
+
+            //future.addDoneListener();
+        }
+
         (mainMap = new ArcGISMap(getString(R.string.solar_potential_map_2))).setInitialViewpoint(vp);
 
         // Setup UI components
@@ -269,6 +302,7 @@ public class MapFragment extends Fragment {
                             Object finalObjectID = objectID;
                             (new HTTPAsyncTask() {
                                 @Override
+
                                 protected void onPostExecute(String result) {
 
                                     if (isAdded()) {
@@ -276,6 +310,7 @@ public class MapFragment extends Fragment {
                                         Envelope envelope1 = feature.getGeometry().getExtent();
 
                                         mainMapView.setViewpointGeometryWithPaddingAsync(envelope1, 200);
+
                                         try {
                                             JSONObject data = new JSONObject(result);
                                             JSONArray arrayData = data.getJSONArray("features");
@@ -284,13 +319,6 @@ public class MapFragment extends Fragment {
                                             Object OptimalData = attributes.get("VALUE_2");
                                             Object ModerateData = attributes.get("VALUE_1");
                                             Object FlatValue = attributes.get("flat_pct");
-
-//                                            BitmapDrawable d = (BitmapDrawable) ContextCompat.getDrawable(getActivity(), R.drawable.red_pin);
-//                                            final PictureMarkerSymbol marker = new PictureMarkerSymbol(d);
-//                                            Point p = feature.getGeometry().getExtent().getCenter();
-//
-//                                            Graphic graphic = new Graphic(p, marker);
-//                                            mapMarkersOverlay.getGraphics().add(graphic);
 
                                             intent.putExtra("ObjectID", String.valueOf(finalObjectID));
                                             intent.putExtra("Optimal", OptimalData.toString());
@@ -317,6 +345,7 @@ public class MapFragment extends Fragment {
                                         }
 
                                         Boolean found = false;
+
                                         for (SolarProject s : installed_projects) {
                                             if (s.p != null) {
                                                 Point k = s.p;
@@ -325,6 +354,7 @@ public class MapFragment extends Fragment {
                                                 }
                                             }
                                         }
+
                                         if (!found) {
                                             intent.putExtra("Data", dialogContent.getText());
                                             startActivity(intent);

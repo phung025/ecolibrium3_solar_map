@@ -35,13 +35,18 @@ public class MainActivity extends AppCompatActivity
     private static final int LOCATION_PERMISSION_CODE = 1;
     private static final int MAP_FRAGMENT_ID = R.id.nav_map;
     private static final int SAVED_LOCATION_FRAGMENT_ID = R.id.nav_saved_locations;
+    private static final int EDUCATIONAL_CONTENT_FRAGMENT_ID = R.id.nav_edu_content;
 
     // Drawer components
     private NavigationView navigationView = null;
 
     // Drawer fragments
     private final MapFragment mapFragment = new MapFragment();
+    private final SavedLocationsFragment savedLocationsFragment = new SavedLocationsFragment();
+    private final EducationalContentFragment educationalContentFragment = new EducationalContentFragment();
 
+    //bundle for mapfragment mapView location
+    private Bundle locationBundle;
 
     private static int RESULT_LOAD_IMG = 1;
 
@@ -105,8 +110,10 @@ public class MainActivity extends AppCompatActivity
         if (id == MAP_FRAGMENT_ID) {
             this.switchFragment(MAP_FRAGMENT_ID);
         } else if (id == SAVED_LOCATION_FRAGMENT_ID) {
-
-        } else if (id == R.id.nav_achievements) {
+            this.switchFragment(SAVED_LOCATION_FRAGMENT_ID);
+        } else if (id == EDUCATIONAL_CONTENT_FRAGMENT_ID) {
+            this.switchFragment(EDUCATIONAL_CONTENT_FRAGMENT_ID);
+        }else if (id == R.id.nav_achievements) {
 
         } else if (id == R.id.nav_settings) {
 
@@ -128,8 +135,22 @@ public class MainActivity extends AppCompatActivity
         // Insert the fragment by replacing any existing fragment
         FragmentManager fragmentManager = getSupportFragmentManager();
 
-        // Switch to the map fragment
-        fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
+        switch (FRAGMENT_ID){
+            default:
+            case MAP_FRAGMENT_ID:
+                // Switch to the map fragment
+                mapFragment.setArguments(locationBundle);
+                fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
+                break;
+            case SAVED_LOCATION_FRAGMENT_ID:
+                // Switch to the saved locations fragment
+                fragmentManager.beginTransaction().replace(R.id.content_main, savedLocationsFragment).commit();
+                break;
+            case EDUCATIONAL_CONTENT_FRAGMENT_ID:
+                //Switch to educational content fragment
+                fragmentManager.beginTransaction().replace(R.id.content_main, educationalContentFragment).commit();
+        }
+
 
         // Highlight selected row
         ((NavigationView) findViewById(R.id.nav_view)).getMenu().getItem(FRAGMENT_ID % MAP_FRAGMENT_ID).setChecked(true);
@@ -159,4 +180,25 @@ public class MainActivity extends AppCompatActivity
             e.printStackTrace();
         }
     }
+
+    /**
+     * Fragment switch called from saved location fragment; gives map fragment a location to go to
+     * immediately
+     */
+    public void savedLocationFragmentSwitch(String locationID){
+
+        // Insert the fragment by replacing the current fragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        // Switch back to the map fragment
+        fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
+
+        // tell map fragment id for new location
+        locationBundle = new Bundle();
+        locationBundle.putString("locationID", locationID);
+
+        //Set the map's viewpoint location
+        switchFragment(MAP_FRAGMENT_ID);
+    }
+
 }
