@@ -119,8 +119,41 @@ public class MapFragment extends Fragment {
         mainMapView.getGraphicsOverlays().add(interestedLocationsOverlay); // Add the overlay to display installed solar projects on the map
         mainMapView.getGraphicsOverlays().add(installedProjectsOverlay); // Add the overlay to display interested locations for having solar panel installed
 
-        // Setting initial view point of the map (Duluth)
+        // Setting initial view point of the map: change viewpoint if getting from savedLocation fragment
+        Bundle myBundle = this.getArguments();
+        //get viewpoint based on the id received from the bundle
+        String bundleId = null;
+
         Viewpoint vp = new Viewpoint(46.7867, -92.1005, 72223.819286);
+
+        if(myBundle != null) bundleId= myBundle.getString("locationID","null");
+
+        if(bundleId != null)
+        {
+            //set up query
+            QueryParameters query = new QueryParameters();
+            query.setReturnGeometry(true);
+            query.setWhereClause("upper(OBJECTID) LIKE '%" + bundleId + "%'");
+
+            //fire off query (async)
+            try
+            {
+                FeatureQueryResult myResult = ((FeatureLayer) mainMap.getOperationalLayers().get(2)).getFeatureTable().queryFeaturesAsync(query).get();
+
+                Point p = myResult.iterator().next().getGeometry().getExtent().getCenter();
+
+                vp = new Viewpoint(p,5000);
+            } catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            } catch (ExecutionException e)
+            {
+                e.printStackTrace();
+            }
+
+            //future.addDoneListener();
+        }
+
         (mainMap = new ArcGISMap(getString(R.string.solar_potential_map_2))).setInitialViewpoint(vp);
 
         // Setup UI components
@@ -290,6 +323,7 @@ public class MapFragment extends Fragment {
                             Object finalObjectID = objectID;
                             (new HTTPAsyncTask() {
                                 @Override
+
                                 protected void onPostExecute(String result) {
 
                                     // Dialog content message
@@ -304,6 +338,7 @@ public class MapFragment extends Fragment {
                                         Envelope envelope1 = feature.getGeometry().getExtent();
 
                                         mainMapView.setViewpointGeometryWithPaddingAsync(envelope1, 200);
+
                                         try {
 
                                             JSONObject data = new JSONObject(result);
@@ -341,6 +376,7 @@ public class MapFragment extends Fragment {
                                         }
 
                                         Boolean found = false;
+
                                         for (SolarProject s : installed_projects) {
                                             if (s.p != null) {
                                                 Point k = s.p;
@@ -349,6 +385,7 @@ public class MapFragment extends Fragment {
                                                 }
                                             }
                                         }
+
                                         if (!found) {
 
                                             // Action when dismiss the dialog
