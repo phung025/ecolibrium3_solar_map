@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity
      * Fragment switch called from saved location fragment; gives map fragment a location to go to
      * immediately
      */
-    public void savedLocationFragmentSwitch(double longitude, double latitude, double zoom){
+    public void savedLocationFragmentSwitch(String locationID){
 
         // Insert the fragment by replacing the current fragment
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -193,11 +193,9 @@ public class MainActivity extends AppCompatActivity
         // Switch back to the map fragment
         fragmentManager.beginTransaction().replace(R.id.content_main, mapFragment).commit();
 
-        // set new location for map
+        // tell map fragment id for new location
         locationBundle = new Bundle();
-        locationBundle.putDouble("longitude", longitude);
-        locationBundle.putDouble("latitude", latitude);
-        locationBundle.putDouble("zoom", zoom);
+        locationBundle.putString("locationID", locationID);
 
         //Set the map's viewpoint location
         switchFragment(MAP_FRAGMENT_ID);
