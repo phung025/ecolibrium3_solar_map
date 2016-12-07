@@ -7,16 +7,5 @@ import javax.security.auth.callback.Callback;
  */
 
 public abstract class CallbackFunction implements Callback {
-
-    private Object result = null;
-
-    public void setResult(Object aResult) {
-        result = aResult;
-    }
-
-    public Object getResult() {
-        return result;
-    }
-
-    public abstract void onPostExecute();
+    public abstract void onPostExecute(Object result);
 }

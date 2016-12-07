@@ -2,9 +2,7 @@ package umd.solarmap.DialogClasses;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -22,8 +20,7 @@ public class AlertDialog {
 
         // Failed to login
         final Dialog dialog = new Dialog(activity);
-        dialog.setContentView(R.layout.dialog_activity_startup_login);
-        dialog.setTitle("Failed to login");
+        dialog.setContentView(R.layout.dialog_alert);
 
         // Set dialog header's color
         RelativeLayout header = (RelativeLayout) dialog.findViewById(R.id.loginDialogHeader);

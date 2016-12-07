@@ -51,7 +51,7 @@
     <!-- Strings related to dialog buttons -->
     <string name="moreInfo">More Info</string>
     <string name="shareInterest">Show interest!</string>
-    <string name="ignore">Ignore</string>
+    <string name="ok">Ok</string>
 
     <!-- Strings for web view -->
     <string name="reloadWebpage">Reload</string>

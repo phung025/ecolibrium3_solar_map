@@ -322,8 +322,7 @@ public class SolarAccountManager implements Serializable {
                         }
 
                         // Execute callback once the update process is finish
-                        ((CallbackFunction)callbackFunction).setResult(sharedLocationList);
-                        ((CallbackFunction)callbackFunction).onPostExecute();
+                        ((CallbackFunction)callbackFunction).onPostExecute(sharedLocationList);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
