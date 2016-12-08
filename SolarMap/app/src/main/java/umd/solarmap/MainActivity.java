@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity
      * Instace fields
      */
     private static final int LOCATION_PERMISSION_CODE = 1;
+    private static int SELECTED_FRAGMENT = R.id.nav_map;
     private static final int MAP_FRAGMENT_ID = R.id.nav_map;
     private static final int SAVED_LOCATION_FRAGMENT_ID = R.id.nav_saved_locations;
     private static final int EDUCATIONAL_CONTENT_FRAGMENT_ID = R.id.nav_edu_content;
@@ -104,8 +105,19 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
         // Handle navigation view item clicks here.
         int id = item.getItemId();
+
+        if (SELECTED_FRAGMENT == id) {
+
+            drawer.closeDrawer(GravityCompat.START);
+            return true;
+        } else {
+            SELECTED_FRAGMENT = id;
+        }
 
         if (id == MAP_FRAGMENT_ID) {
             this.switchFragment(MAP_FRAGMENT_ID);
@@ -121,8 +133,6 @@ public class MainActivity extends AppCompatActivity
 
         }
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
