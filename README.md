@@ -1,3 +1,8 @@
+<a href="url"><img src="images/login_screen.png" align="center" height="20%" width="20%" ></a>
+<a href="url"><img src="images/map.png" align="center" height="20%" width="20%" ></a>
+<a href="url"><img src="images/dialog.png" align="center" height="20%" width="20%" ></a>
+<a href="url"><img src="images/data.png" align="center" height="20%" width="20%" ></a>
+
 This repo is divided into two parts: a node server and a android client. View each of the perspective README's for more information on how to run this project.
 
 This project is aimed at presenting the solar information provided to us by the "Duluth Shines!" and to add distributed aspects to the map in order to gain interest in solar.
