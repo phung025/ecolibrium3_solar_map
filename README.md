@@ -1,3 +1,5 @@
+# Ecolibrium3 Solar Map App
+
 <a href="url"><img src="images/login_screen.png" align="center" height="20%" width="20%" ></a>
 <a href="url"><img src="images/map.png" align="center" height="20%" width="20%" ></a>
 <a href="url"><img src="images/dialog.png" align="center" height="20%" width="20%" ></a>
